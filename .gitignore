@@ -1,0 +1,14 @@
+# Maven / Java build outputs
+cinemaBooking/target/
+cinemaBooking/.mvn/
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local runtime logs
+cinemaBooking/mvn-run-output*.txt
