@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cinema World</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="site-header">
+        <a class="logo" href="index.html">
+            <img src="images/CinemaWorldLogo2-cropped.png" alt="Cinema World logo">
+        </a>
+
+        <nav class="nav-links" aria-label="Main navigation">
+            <a href="#movies">Movies</a>
+            <a href="#coming-soon">Coming Soon</a>
+            <a href="#contact">Contact</a>
+        </nav>
+    </header>
+
+    <main>
+        <div id="homePage">
+            <section class="hero">
+                <div class="hero-text">
+                    <p class="small-heading">Welcome to Cinema World</p>
+                    <h1>Book your next movie night.</h1>
+                    <p class="hero-summary">
+                        Find a film, pick a showtime, and settle in for the big screen.
+                    </p>
+                    <a class="hero-button" href="#movies">View Movies</a>
+                </div>
+            </section>
+
+            <section class="search-panel" aria-label="Movie search">
+                <label for="searchInput">Search by title</label>
+                <input id="searchInput" type="search" placeholder="Try Toy Story, Moana, Spider-Man...">
+
+                <label for="genreFilter">Filter by genre</label>
+                <select id="genreFilter">
+                    <option value="All">All genres</option>
+                </select>
+
+                <label for="dateFilter">Filter by show date</label>
+                <select id="dateFilter" disabled>
+                    <option>Coming in next sprint</option>
+                </select>
+            </section>
+
+            <section id="movies" class="movie-section">
+                <div class="section-title">
+                    <h2>Currently Running</h2>
+                </div>
+                <div id="currentMovies" class="movie-grid"></div>
+            </section>
+
+            <section id="coming-soon" class="movie-section">
+                <div class="section-title">
+                    <h2>Coming Soon</h2>
+                </div>
+                <div id="comingSoonMovies" class="movie-grid"></div>
+            </section>
+
+            <p id="noResults" class="no-results">No movies match your search.</p>
+        </div>
+
+        <section id="movieDetailsPage" class="details-page">
+            <button id="backToMoviesButton" class="back-button" type="button">Back to Movies</button>
+
+            <div class="details-header">
+                <p class="small-heading">Movie Details</p>
+                <h1 id="detailsTitle"></h1>
+                <p id="detailsMeta" class="details-meta"></p>
+            </div>
+
+            <div class="details-trailer">
+                <iframe id="detailsTrailer" title="Movie trailer" allowfullscreen></iframe>
+            </div>
+
+            <div class="details-layout">
+                <div class="details-info">
+                    <h2>More Information</h2>
+                    <p id="detailsDescription"></p>
+
+                    <dl class="movie-facts">
+                        <div>
+                            <dt>Genre</dt>
+                            <dd id="detailsGenre"></dd>
+                        </div>
+                        <div>
+                            <dt>Rating</dt>
+                            <dd id="detailsRating"></dd>
+                        </div>
+                    </dl>
+
+                    <h2>Showtimes</h2>
+                    <div id="showtimeButtons" class="showtime-list"></div>
+                </div>
+
+                <img id="detailsPoster" class="details-poster" src="" alt="">
+            </div>
+        </section>
+
+        <section id="bookingPage" class="booking-page">
+            <p class="small-heading">Booking Prototype</p>
+            <h1>Review Your Showtime</h1>
+
+            <div class="booking-card">
+                <div class="booking-top">
+                    <div>
+                        <p>Movie</p>
+                        <h2 id="bookingMovieTitle"></h2>
+
+                        <p>Showtime</p>
+                        <h2 id="bookingShowtime"></h2>
+                    </div>
+
+                    <img id="bookingPoster" class="booking-poster" src="" alt="">
+                </div>
+
+                <h2>Tickets</h2>
+                <div class="ticket-list">
+                    <div class="ticket-row">
+                        <span>Adult <strong>$14.00</strong></span>
+                        <div class="counter-controls">
+                            <button class="counter-button" type="button" data-ticket="adult" data-change="-1">-</button>
+                            <span id="adultTickets" class="ticket-count">0</span>
+                            <button class="counter-button" type="button" data-ticket="adult" data-change="1">+</button>
+                        </div>
+                    </div>
+
+                    <div class="ticket-row">
+                        <span>Child <strong>$9.00</strong></span>
+                        <div class="counter-controls">
+                            <button class="counter-button" type="button" data-ticket="child" data-change="-1">-</button>
+                            <span id="childTickets" class="ticket-count">0</span>
+                            <button class="counter-button" type="button" data-ticket="child" data-change="1">+</button>
+                        </div>
+                    </div>
+
+                    <div class="ticket-row">
+                        <span>Senior <strong>$10.00</strong></span>
+                        <div class="counter-controls">
+                            <button class="counter-button" type="button" data-ticket="senior" data-change="-1">-</button>
+                            <span id="seniorTickets" class="ticket-count">0</span>
+                            <button class="counter-button" type="button" data-ticket="senior" data-change="1">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <h2>Choose Seats</h2>
+                <div class="screen-label">Screen</div>
+                <div id="seatLayout" class="seat-layout" aria-label="Seating layout"></div>
+
+                <div class="booking-summary">
+                    <p>Selected seats: <strong id="selectedSeatsText">None</strong></p>
+                    <p>Prototype total: <strong id="ticketTotal">$0.00</strong></p>
+                </div>
+
+                <p class="booking-note">
+                    Checkout and payment will be added in a later sprint.
+                </p>
+
+                <div class="booking-actions">
+                    <button class="checkout-button" type="button">Checkout</button>
+                    <button id="backToDetailsButton" class="back-button" type="button">Back to Movie</button>
+                    <button id="bookingBackToMoviesButton" class="back-button" type="button">Back to Movies</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer id="contact" class="footer">
+        <p>Cinema World</p>
+        <p>Showtimes and booking features coming soon.</p>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
