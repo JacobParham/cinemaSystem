@@ -30,30 +30,35 @@ public class MovieService {
     }
 
     public List<Movie> searchMovies(String title, String genre, String status) {
-        boolean hasTitle = title != null && !title.isBlank();
-        boolean hasGenre = genre != null && !genre.isBlank();
-        boolean hasStatus = status != null && !status.isBlank();
+        String normalizedTitle = title == null ? null : title.trim();
+        String normalizedGenre = genre == null ? null : genre.trim();
+        String normalizedStatus = status == null ? null : status.trim();
+
+        boolean hasTitle = normalizedTitle != null && !normalizedTitle.isBlank();
+        boolean hasGenre = normalizedGenre != null && !normalizedGenre.isBlank();
+        boolean hasStatus = normalizedStatus != null && !normalizedStatus.isBlank();
 
         if (hasTitle && hasGenre && hasStatus) {
-            return movieRepository.findByTitleContainingIgnoreCaseAndGenreIgnoreCaseAndStatus(title, genre, status);
+            return movieRepository.findByTitleContainingIgnoreCaseAndGenreIgnoreCaseAndStatus(normalizedTitle, normalizedGenre, normalizedStatus);
         }
         if (hasTitle && hasGenre) {
-            return movieRepository.findByTitleContainingIgnoreCaseAndGenreIgnoreCase(title, genre);
+            return movieRepository.findByTitleContainingIgnoreCaseAndGenreIgnoreCase(normalizedTitle, normalizedGenre);
         }
         if (hasTitle && hasStatus) {
-            return movieRepository.findByTitleContainingIgnoreCaseAndStatus(title, status);
+            return movieRepository.findByTitleContainingIgnoreCaseAndStatus(normalizedTitle, normalizedStatus);
         }
         if (hasGenre && hasStatus) {
-            return movieRepository.findByGenreIgnoreCaseAndStatus(genre, status);
+            return movieRepository.findByGenreIgnoreCaseAndStatus(normalizedGenre, normalizedStatus);
         }
         if (hasTitle) {
-            return movieRepository.findByTitleContainingIgnoreCase(title);
+            List<Movie> titleMatches = movieRepository.findByTitleContainingIgnoreCase(normalizedTitle);
+            return titleMatches.isEmpty() ? movieRepository.findAll() : titleMatches;
         }
         if (hasGenre) {
-            return movieRepository.findByGenreIgnoreCase(genre);
+            return movieRepository.findByGenreIgnoreCase(normalizedGenre);
         }
         if (hasStatus) {
-            return movieRepository.findByStatus(status);
+            return movieRepository.findByStatus(normalizedStatus);
         }
         return movieRepository.findAll();
     }
