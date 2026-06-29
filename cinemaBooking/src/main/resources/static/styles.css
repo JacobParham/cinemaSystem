@@ -30,9 +30,18 @@ a {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 210px;
+    min-width: 210px;
     height: 84px;
+    color: #f7f2ea;
+    font-size: 1.8rem;
+    font-weight: bold;
+    letter-spacing: 0.04em;
     text-decoration: none;
+    text-transform: uppercase;
+}
+
+.logo span {
+    color: var(--main-orange);
 }
 
 .logo img {
@@ -139,6 +148,29 @@ h1 {
 
 .search-panel select:disabled {
     opacity: 0.65;
+}
+
+.status-message {
+    margin: 0 7%;
+    padding: 18px;
+    border-radius: 8px;
+    font-weight: bold;
+}
+
+.status-loading {
+    border: 1px solid #4a4a4a;
+    color: #d9d1c7;
+    background: #181818;
+}
+
+.status-error {
+    border: 1px solid #d64545;
+    color: #ffd9d9;
+    background: #2a1212;
+}
+
+.status-message[hidden] {
+    display: none;
 }
 
 .movie-section {
@@ -333,6 +365,25 @@ h1 {
     color: #111111;
 }
 
+.seat-button--disabled:not(.selected-seat) {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.booking-feedback {
+    min-height: 1.2rem;
+    margin-bottom: 16px;
+    color: #c7c0b8;
+}
+
+.booking-feedback--error {
+    color: #ffb4b4;
+}
+
+.booking-feedback--success {
+    color: #b8f0c6;
+}
+
 .booking-summary {
     margin-bottom: 24px;
     padding: 14px;
@@ -479,6 +530,12 @@ h1 {
 
 .showtime-button {
     padding: 12px 16px;
+}
+
+.showtime-button--disabled,
+.showtime-button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
 }
 
 .details-poster {

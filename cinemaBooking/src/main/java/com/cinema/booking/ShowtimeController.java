@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.cinema.booking.exception.MovieNotFoundException;
 import com.cinema.booking.model.Movie;
 import com.cinema.booking.model.Showtime;
 import com.cinema.booking.repository.MovieRepository;
@@ -37,7 +38,7 @@ public class ShowtimeController {
     @GetMapping("/movie/{movieId}")
     public List<ShowtimeResponse> getShowtimesByMovie(@PathVariable int movieId) {
         Movie movie = movieRepository.findById(movieId)
-                .orElseThrow(() -> new IllegalArgumentException("Movie not found: " + movieId));
+                .orElseThrow(() -> new MovieNotFoundException(movieId));
 
         return showtimeRepository.findByMovie(movie)
                 .stream()

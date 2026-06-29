@@ -1,3 +1,7 @@
+// Sprint 1 integration note:
+// Replace the hardcoded `movies` array below with fetch() calls to the backend.
+// Use #moviesLoading and #moviesError while loading. See README.md for API details.
+
 const movies = [
     {
         title: "Backrooms",
@@ -87,6 +91,8 @@ const seniorTickets = document.querySelector("#seniorTickets");
 const seatLayout = document.querySelector("#seatLayout");
 const selectedSeatsText = document.querySelector("#selectedSeatsText");
 const ticketTotal = document.querySelector("#ticketTotal");
+const bookingFeedback = document.querySelector("#bookingFeedback");
+const checkoutButton = document.querySelector("#checkoutButton");
 const backToDetailsButton = document.querySelector("#backToDetailsButton");
 const bookingBackToMoviesButton = document.querySelector("#bookingBackToMoviesButton");
 
@@ -103,6 +109,55 @@ const ticketPrices = {
     child: 9,
     senior: 10
 };
+
+function isBookableShowtime(showtime) {
+    return showtime.toLowerCase() !== "coming soon";
+}
+
+function getTotalTickets() {
+    return ticketCounts.adult + ticketCounts.child + ticketCounts.senior;
+}
+
+function clearBookingFeedback() {
+    bookingFeedback.textContent = "";
+    bookingFeedback.className = "booking-feedback";
+}
+
+function showBookingFeedback(message, type) {
+    bookingFeedback.textContent = message;
+    bookingFeedback.className = "booking-feedback booking-feedback--" + type;
+}
+
+function trimSelectedSeats() {
+    const totalTickets = getTotalTickets();
+
+    if (selectedSeats.length <= totalTickets) {
+        return;
+    }
+
+    const seatsToRemove = selectedSeats.slice(totalTickets);
+    selectedSeats = selectedSeats.slice(0, totalTickets);
+
+    seatsToRemove.forEach(function (seatName) {
+        const seatButton = document.querySelector('.seat-button[data-seat="' + seatName + '"]');
+        if (seatButton) {
+            seatButton.classList.remove("selected-seat");
+        }
+    });
+}
+
+function refreshSeatAvailability() {
+    const totalTickets = getTotalTickets();
+    const seatButtons = document.querySelectorAll(".seat-button");
+
+    seatButtons.forEach(function (button) {
+        const isSelected = button.classList.contains("selected-seat");
+        const atSeatLimit = !isSelected && selectedSeats.length >= totalTickets && totalTickets > 0;
+
+        button.disabled = totalTickets === 0 || atSeatLimit;
+        button.classList.toggle("seat-button--disabled", button.disabled);
+    });
+}
 
 function createMovieCard(movie) {
     return `
@@ -174,7 +229,11 @@ function showMovieDetails(movieTitle) {
     currentMovieTitle = selectedMovie.title;
 
     showtimeButtons.innerHTML = selectedMovie.showtimes.map(function (showtime) {
-        return `<button class="showtime-button" type="button" data-showtime="${showtime}">${showtime}</button>`;
+        const isBookable = isBookableShowtime(showtime);
+        const buttonClass = isBookable ? "showtime-button" : "showtime-button showtime-button--disabled";
+        const disabledAttr = isBookable ? "" : " disabled";
+
+        return `<button class="${buttonClass}" type="button" data-showtime="${showtime}"${disabledAttr}>${showtime}</button>`;
     }).join("");
 
     connectShowtimeButtons(selectedMovie);
@@ -190,6 +249,10 @@ function connectShowtimeButtons(movie) {
 
     buttons.forEach(function (button) {
         button.addEventListener("click", function () {
+            if (!isBookableShowtime(button.dataset.showtime)) {
+                return;
+            }
+
             showBookingPage(movie.title, button.dataset.showtime);
         });
     });
@@ -226,12 +289,15 @@ function resetBookingForm() {
         senior: 0
     };
     selectedSeats = [];
+    clearBookingFeedback();
     updateBookingSummary();
 }
 
 function changeTicketCount(ticketType, amount) {
     const newCount = ticketCounts[ticketType] + amount;
     ticketCounts[ticketType] = Math.max(0, newCount);
+    trimSelectedSeats();
+    clearBookingFeedback();
     updateBookingSummary();
 }
 
@@ -263,17 +329,27 @@ function connectSeatButtons() {
 
 function toggleSeat(button) {
     const seatName = button.dataset.seat;
+    const totalTickets = getTotalTickets();
+
+    if (totalTickets === 0) {
+        showBookingFeedback("Choose at least one ticket before selecting seats.", "error");
+        return;
+    }
 
     if (selectedSeats.includes(seatName)) {
         selectedSeats = selectedSeats.filter(function (seat) {
             return seat !== seatName;
         });
         button.classList.remove("selected-seat");
+    } else if (selectedSeats.length >= totalTickets) {
+        showBookingFeedback("You can only select as many seats as tickets.", "error");
+        return;
     } else {
         selectedSeats.push(seatName);
         button.classList.add("selected-seat");
     }
 
+    clearBookingFeedback();
     updateBookingSummary();
 }
 
@@ -289,6 +365,26 @@ function updateBookingSummary() {
 
     selectedSeatsText.textContent = selectedSeats.length > 0 ? selectedSeats.join(", ") : "None";
     ticketTotal.textContent = "$" + total.toFixed(2);
+    refreshSeatAvailability();
+}
+
+function handleCheckout() {
+    const totalTickets = getTotalTickets();
+
+    if (totalTickets === 0) {
+        showBookingFeedback("Add at least one ticket before checkout.", "error");
+        return;
+    }
+
+    if (selectedSeats.length !== totalTickets) {
+        showBookingFeedback("Select exactly " + totalTickets + " seat(s) to match your tickets.", "error");
+        return;
+    }
+
+    showBookingFeedback(
+        "Prototype only: your selection is ready, but booking is not saved yet. Payment comes in a later sprint.",
+        "success"
+    );
 }
 
 function returnToCurrentMovie() {
@@ -327,6 +423,7 @@ genreFilter.addEventListener("change", renderMovies);
 backToMoviesButton.addEventListener("click", showHomePage);
 backToDetailsButton.addEventListener("click", returnToCurrentMovie);
 bookingBackToMoviesButton.addEventListener("click", showHomePage);
+checkoutButton.addEventListener("click", handleCheckout);
 
 document.querySelectorAll(".counter-button").forEach(function (button) {
     button.addEventListener("click", function () {

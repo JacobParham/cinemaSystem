@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.cinema.booking.exception.MovieNotFoundException;
 import com.cinema.booking.model.Movie;
 import com.cinema.booking.repository.MovieRepository;
 
@@ -22,7 +23,7 @@ public class MovieService {
 
     public Movie getMovieById(int movieId) {
         return movieRepository.findById(movieId)
-                .orElseThrow(() -> new IllegalArgumentException("Movie not found: " + movieId));
+                .orElseThrow(() -> new MovieNotFoundException(movieId));
     }
 
     public List<Movie> getMoviesByStatus(String status) {

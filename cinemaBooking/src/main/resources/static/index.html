@@ -8,9 +8,7 @@
 </head>
 <body>
     <header class="site-header">
-        <a class="logo" href="index.html">
-            <img src="images/CinemaWorldLogo2-cropped.png" alt="Cinema World logo">
-        </a>
+        <a class="logo" href="index.html">Cinema<span>World</span></a>
 
         <nav class="nav-links" aria-label="Main navigation">
             <a href="#movies">Movies</a>
@@ -46,6 +44,9 @@
                     <option>Coming in next sprint</option>
                 </select>
             </section>
+
+            <p id="moviesLoading" class="status-message status-loading" hidden>Loading movies...</p>
+            <p id="moviesError" class="status-message status-error" hidden>Could not load movies. Please try again later.</p>
 
             <section id="movies" class="movie-section">
                 <div class="section-title">
@@ -154,15 +155,17 @@
 
                 <div class="booking-summary">
                     <p>Selected seats: <strong id="selectedSeatsText">None</strong></p>
-                    <p>Prototype total: <strong id="ticketTotal">$0.00</strong></p>
+                    <p>Ticket total: <strong id="ticketTotal">$0.00</strong></p>
                 </div>
 
+                <p id="bookingFeedback" class="booking-feedback" role="status" aria-live="polite"></p>
+
                 <p class="booking-note">
-                    Checkout and payment will be added in a later sprint.
+                    This is a UI prototype only. Checkout and payment will be added in a later sprint.
                 </p>
 
                 <div class="booking-actions">
-                    <button class="checkout-button" type="button">Checkout</button>
+                    <button id="checkoutButton" class="checkout-button" type="button">Checkout</button>
                     <button id="backToDetailsButton" class="back-button" type="button">Back to Movie</button>
                     <button id="bookingBackToMoviesButton" class="back-button" type="button">Back to Movies</button>
                 </div>
@@ -172,7 +175,7 @@
 
     <footer id="contact" class="footer">
         <p>Cinema World</p>
-        <p>Showtimes and booking features coming soon.</p>
+        <p>Browse movies, watch trailers, and try the booking prototype for Sprint 1.</p>
     </footer>
 
     <script src="app.js"></script>
