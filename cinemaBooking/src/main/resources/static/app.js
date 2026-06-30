@@ -2,68 +2,22 @@
 // Replace the hardcoded `movies` array below with fetch() calls to the backend.
 // Use #moviesLoading and #moviesError while loading. See README.md for API details.
 
-const movies = [
-    {
-        title: "Backrooms",
-        genre: "Horror",
-        rating: "R",
-        status: "Currently Running",
-        posterUrl: "https://www.themoviedb.org/t/p/w1280/rhGx6E3qRNMgj3i5su2oukNHwIQ.jpg",
-        trailerUrl: "https://www.youtube.com/embed/0HjdiohVOik?si=OBkqyQGIvwezePb4",
-        showtimes: ["2:00 PM", "5:00 PM", "8:00 PM"],
-        description: "A strange doorway appears in the basement of a furniture storeroom."
-    },
-    {
-        title: "Toy Story 5",
-        genre: "Animation",
-        rating: "PG",
-        status: "Currently Running",
-        posterUrl: "https://www.themoviedb.org/t/p/w1280/a6H2U7pjibMia41TwyFVd1PVQw3.jpg",
-        trailerUrl: "https://www.youtube.com/embed/c51ND9Hdbw0?si=XqRigDklBpu9hySn",
-        showtimes: ["1:00 PM", "4:00 PM", "7:00 PM"],
-        description: "Buzz, Woody, Jessie, and the gang face a new threat to playtime."
-    },
-    {
-        title: "The Mandalorian and Grogu",
-        genre: "Adventure",
-        rating: "PG-13",
-        status: "Currently Running",
-        posterUrl: "https://www.themoviedb.org/t/p/w1280/5Vi8dSauVwH1HOsiZceDMbRr1Ca.jpg",
-        trailerUrl: "https://www.youtube.com/embed/IHWlvwu8t1w?si=W2mi8ccvphrl3QQi",
-        showtimes: ["3:30 PM", "6:30 PM", "9:30 PM"],
-        description: "A legendary Mandalorian bounty hunter and Grogu help protect the New Republic."
-    },
-    {
-        title: "Spider-Man: Brand New Day",
-        genre: "Action",
-        rating: "PG-13",
-        status: "Coming Soon",
-        posterUrl: "https://www.themoviedb.org/t/p/w1280/yyB2VJEW3an2xCdcYCPQhn9QERR.jpg",
-        trailerUrl: "https://www.youtube.com/embed/62bIsvRcPv0?si=_2sG99NQ38WxV4mz",
-        showtimes: ["Coming Soon"],
-        description: "Peter Parker faces a shocking new threat while rebuilding his life as Spider-Man."
-    },
-    {
-        title: "Moana",
-        genre: "Adventure",
-        rating: "PG",
-        status: "Coming Soon",
-        posterUrl: "https://www.themoviedb.org/t/p/w1280/zKVgiv5qHCvCLT4A2ymJi5QeXDH.jpg",
-        trailerUrl: "https://www.youtube.com/embed/EEz5xbzYPKI?si=O1Lw03OqET8RvjrX",
-        showtimes: ["Coming Soon"],
-        description: "Moana answers the ocean's call and sails beyond the reef of Motunui."
-    },
-    {
-        title: "The Odyssey",
-        genre: "Fantasy",
-        rating: "R",
-        status: "Coming Soon",
-        posterUrl: "https://www.themoviedb.org/t/p/w1280/krVa7rKCQb4OBfsr2LTJv4rTz5q.jpg",
-        trailerUrl: "https://www.youtube.com/embed/f_bKjZeJBBI?si=5lUQS2RhBFI31cyQ",
-        showtimes: ["Coming Soon"],
-        description: "Odysseus begins a dangerous journey home after the Trojan War."
+let movies = [];
+
+async function loadMovies() {
+    const response = await fetch("/movies");
+    if (!response.ok) {
+        throw new Error("Failed to load movies: " + response.status);
     }
-];
+    const data = await response.json();
+
+    movies = data.map(function (movie) {
+        const showtimes = movie.status === "Coming Soon"
+            ? ["Coming Soon"]
+            : ["2:00 PM", "5:00 PM", "8:00 PM"];
+        return { ...movie, showtimes: showtimes };
+    });
+}
 
 const homePage = document.querySelector("#homePage");
 const movieDetailsPage = document.querySelector("#movieDetailsPage");
@@ -431,5 +385,10 @@ document.querySelectorAll(".counter-button").forEach(function (button) {
     });
 });
 
-loadGenres();
-renderMovies();
+async function init() {
+    await loadMovies();
+    loadGenres();
+    renderMovies();
+}
+
+init();
