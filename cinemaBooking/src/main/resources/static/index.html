@@ -14,6 +14,9 @@
             <a href="#movies">Movies</a>
             <a href="#coming-soon">Coming Soon</a>
             <a href="#contact">Contact</a>
+            <button class="nav-button" type="button" data-page="loginPage">Login</button>
+            <button class="nav-button" type="button" data-page="profilePage">Profile</button>
+            <button class="nav-button" type="button" data-page="adminPage">Admin</button>
         </nav>
     </header>
 
@@ -171,11 +174,164 @@
                 </div>
             </div>
         </section>
+
+        <section id="loginPage" class="account-page">
+            <button class="back-button" type="button" data-page="homePage">Back to Movies</button>
+            <h1>Login</h1>
+
+            <form id="loginForm" class="account-form">
+                <label for="loginEmail">Email <span>*</span></label>
+                <input id="loginEmail" name="email" type="email" required>
+
+                <label for="loginPassword">Password <span>*</span></label>
+                <input id="loginPassword" name="password" type="password" required>
+
+                <button class="form-button" type="submit">Login</button>
+                <button class="text-button" type="button" data-page="resetPasswordPage">Forgot password?</button>
+                <div class="account-switch">
+                    <span>Don't have an account yet?</span>
+                    <a href="#" data-page="registerPage">Register</a>
+                </div>
+                <p id="loginMessage" class="form-message" role="status" aria-live="polite"></p>
+            </form>
+        </section>
+
+        <section id="registerPage" class="account-page">
+            <button class="back-button" type="button" data-page="homePage">Back to Movies</button>
+            <p class="small-heading">Create Account</p>
+            <h1>Register</h1>
+
+            <form id="registerForm" class="account-form">
+                <label for="registerFirstName">First name <span>*</span></label>
+                <input id="registerFirstName" name="firstName" type="text" required>
+
+                <label for="registerLastName">Last name <span>*</span></label>
+                <input id="registerLastName" name="lastName" type="text" required>
+
+                <label for="registerEmail">Email <span>*</span></label>
+                <input id="registerEmail" name="email" type="email" required>
+
+                <label for="registerPassword">Password <span>*</span></label>
+                <input id="registerPassword" name="password" type="password" required>
+
+                <label for="registerConfirmPassword">Confirm password <span>*</span></label>
+                <input id="registerConfirmPassword" name="confirmPassword" type="password" required>
+
+                <label class="checkbox-row">
+                    <input id="registerPromotions" name="promotions" type="checkbox">
+                    Receive promotions
+                </label>
+
+                <button class="form-button" type="submit">Create Account</button>
+                <p id="registerMessage" class="form-message" role="status" aria-live="polite"></p>
+            </form>
+        </section>
+
+        <section id="resetPasswordPage" class="account-page">
+            <button class="back-button" type="button" data-page="loginPage">Back to Login</button>
+            <h1>Reset Password</h1>
+
+            <form id="resetPasswordForm" class="account-form">
+                <label for="resetEmail">Email <span>*</span></label>
+                <input id="resetEmail" name="email" type="email" required>
+
+                <button class="form-button" type="submit">Send Reset Link</button>
+                <p id="resetPasswordMessage" class="form-message" role="status" aria-live="polite"></p>
+            </form>
+        </section>
+
+        <section id="profilePage" class="account-page">
+            <button class="back-button" type="button" data-page="homePage">Back to Movies</button>
+            <h1>Favorite Movies</h1>
+
+            <section class="profile-section">
+                <div id="favoriteMovieList" class="favorite-movie-grid"></div>
+            </section>
+
+            <h1>Edit Profile</h1>
+
+            <form id="profileForm" class="account-form">
+                <label for="profileFirstName">First name <span>*</span></label>
+                <input id="profileFirstName" name="firstName" type="text" value="Demo" required>
+
+                <label for="profileLastName">Last name <span>*</span></label>
+                <input id="profileLastName" name="lastName" type="text" value="User" required>
+
+                <label for="profileEmail">Email</label>
+                <input id="profileEmail" name="email" type="email" value="demo@cinemaworld.com" disabled>
+
+                <h2>Address</h2>
+                <input id="profileAddress" name="address" type="text" list="addressSuggestions" placeholder="Example: 233 Broad St">
+                <datalist id="addressSuggestions"></datalist>
+
+                <h2>Payment Cards</h2>
+                <div id="paymentCardList" class="simple-list"></div>
+                <button id="addCardButton" class="form-button form-button--secondary" type="button">Add Card</button>
+
+                <div id="cardFields" class="card-fields" hidden>
+                    <label for="cardName">Name on card <span>*</span></label>
+                    <input id="cardName" name="cardName" type="text" autocomplete="cc-name">
+
+                    <label for="cardNumber">Card number <span>*</span></label>
+                    <input id="cardNumber" name="cardNumber" type="text" inputmode="numeric" autocomplete="cc-number" placeholder="1234 1234 1234 1234" maxlength="23">
+
+                    <div class="card-field-row">
+                        <div>
+                            <label for="cardExpiration">Expiration <span>*</span></label>
+                            <input id="cardExpiration" name="cardExpiration" type="text" autocomplete="cc-exp" placeholder="MM/YY" maxlength="5">
+                        </div>
+
+                        <div>
+                            <label for="cardCvv">CVV <span>*</span></label>
+                            <input id="cardCvv" name="cardCvv" type="text" inputmode="numeric" autocomplete="cc-csc" placeholder="123" maxlength="4">
+                        </div>
+                    </div>
+
+                    <label for="cardZip">Billing ZIP <span>*</span></label>
+                    <input id="cardZip" name="cardZip" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="30602">
+
+                    <div class="card-form-actions">
+                        <button id="saveCardButton" class="form-button" type="button">Save Card</button>
+                        <button id="cancelCardButton" class="text-button" type="button">Cancel</button>
+                    </div>
+                    <p id="cardMessage" class="form-message" role="status" aria-live="polite"></p>
+                </div>
+
+                <h2>Change Password</h2>
+                <label for="currentPassword">Current password <span>*</span></label>
+                <input id="currentPassword" name="currentPassword" type="password" autocomplete="current-password">
+
+                <label for="newPassword">New password <span>*</span></label>
+                <input id="newPassword" name="newPassword" type="password" autocomplete="new-password">
+
+                <label for="confirmNewPassword">Confirm new password <span>*</span></label>
+                <input id="confirmNewPassword" name="confirmNewPassword" type="password" autocomplete="new-password">
+
+                <button id="changePasswordButton" class="form-button form-button--secondary" type="button">Change Password</button>
+                <p id="changePasswordMessage" class="form-message" role="status" aria-live="polite"></p>
+
+                <button class="form-button" type="submit">Save Profile</button>
+                <p id="profileMessage" class="form-message" role="status" aria-live="polite"></p>
+            </form>
+        </section>
+
+        <section id="adminPage" class="account-page">
+            <button class="back-button" type="button" data-page="homePage">Back to Movies</button>
+            <p class="small-heading">Admin Prototype</p>
+            <h1>Admin Home</h1>
+
+            <div class="admin-menu">
+                <button type="button">Manage Movies</button>
+                <button type="button">Promotions</button>
+                <button type="button">Users</button>
+                <button type="button">Showtimes</button>
+            </div>
+        </section>
     </main>
 
     <footer id="contact" class="footer">
         <p>Cinema World</p>
-        <p>Browse movies, watch trailers, and try the booking prototype for Sprint 1.</p>
+        <p>Your world filled with your favorite movies.</p>
     </footer>
 
     <script src="app.js"></script>

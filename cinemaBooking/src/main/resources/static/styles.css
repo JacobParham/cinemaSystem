@@ -61,8 +61,19 @@ a {
     text-decoration: none;
 }
 
-.nav-links a:hover {
+.nav-links a:hover,
+.nav-button:hover {
     color: var(--main-orange);
+}
+
+.nav-button {
+    border: 0;
+    background: transparent;
+    color: #f7f2ea;
+    cursor: pointer;
+    font: inherit;
+    font-weight: bold;
+    padding: 0;
 }
 
 .hero {
@@ -193,6 +204,8 @@ h1 {
 }
 
 .movie-card {
+    display: grid;
+    grid-template-rows: auto 1fr;
     overflow: hidden;
     border: 1px solid #2f2f2f;
     border-radius: 8px;
@@ -225,11 +238,17 @@ h1 {
 }
 
 .movie-info {
+    display: flex;
+    flex-direction: column;
     padding: 16px;
+    min-height: 160px;
 }
 
 .movie-info h3 {
+    flex: 1;
     margin-bottom: 8px;
+    font-size: 1.15rem;
+    line-height: 1.25;
 }
 
 .movie-meta {
@@ -239,14 +258,14 @@ h1 {
     font-weight: bold;
 }
 
-.movie-info p:not(.movie-meta) {
-    color: #c7c0b8;
-    font-size: 0.95rem;
-}
-
 .details-button,
+.favorite-button,
 .showtime-button,
-.back-button {
+.back-button,
+.form-button,
+.text-button,
+.admin-menu button,
+.simple-list-row button {
     border: 0;
     border-radius: 8px;
     background: var(--main-orange);
@@ -457,6 +476,307 @@ h1 {
     padding: 10px 12px;
 }
 
+.movie-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: auto;
+}
+
+.favorite-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 54px;
+    height: 48px;
+    margin-top: 8px;
+    margin-left: auto;
+    border: 0;
+    background: transparent;
+    padding: 0;
+}
+
+.favorite-icon {
+    width: 34px;
+    height: 32px;
+    fill: transparent;
+    stroke: var(--main-orange);
+    stroke-width: 7;
+    stroke-linejoin: round;
+    transition: fill 0.15s ease;
+}
+
+.favorite-button--active .favorite-icon {
+    fill: var(--main-orange);
+}
+
+.account-page {
+    display: none;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 42px 24px 64px;
+}
+
+.account-page h1 {
+    margin-bottom: 24px;
+    font-size: clamp(2rem, 5vw, 3.4rem);
+}
+
+.account-page h1 + .account-form {
+    margin-top: 0;
+}
+
+.profile-section + h1 {
+    margin-top: 34px;
+}
+
+.account-form {
+    display: grid;
+    gap: 12px;
+    padding: 26px;
+    border: 1px solid #2f2f2f;
+    border-radius: 8px;
+    background: #1b1b1b;
+}
+
+.profile-section {
+    margin-bottom: 20px;
+    padding: 22px;
+    border: 1px solid #2f2f2f;
+    border-radius: 8px;
+    background: #1b1b1b;
+}
+
+.profile-section h2 {
+    margin-bottom: 16px;
+    font-size: 1.35rem;
+}
+
+.favorite-movie-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(120px, 1fr));
+    gap: 12px;
+}
+
+.favorite-movie-grid p {
+    grid-column: 1 / -1;
+    margin: 0;
+    padding: 12px;
+    border: 1px solid #2f2f2f;
+    border-radius: 8px;
+    background: #111111;
+    color: #c7c0b8;
+}
+
+.favorite-card {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid #2f2f2f;
+    border-radius: 8px;
+    background: #111111;
+}
+
+.favorite-poster-button {
+    display: block;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+}
+
+.favorite-poster-button img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
+}
+
+.favorite-card .favorite-button {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    width: 42px;
+    height: 38px;
+    border-radius: 999px;
+    background: rgba(8, 8, 8, 0.78);
+}
+
+.favorite-card .favorite-icon {
+    width: 26px;
+    height: 24px;
+}
+
+.account-form label,
+.account-form h2 {
+    color: #f7f2ea;
+    font-weight: bold;
+}
+
+.account-form h2 {
+    margin: 20px 0 0;
+    font-size: 1.25rem;
+}
+
+.account-form label span {
+    color: var(--main-orange);
+}
+
+.account-form input {
+    width: 100%;
+    min-height: 44px;
+    padding: 0 12px;
+    border: 1px solid #4a4a4a;
+    border-radius: 8px;
+    background: #0c0c0c;
+    color: #f7f2ea;
+    font: inherit;
+}
+
+.account-form input:disabled {
+    opacity: 0.72;
+}
+
+.checkbox-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.checkbox-row input {
+    width: auto;
+    min-height: auto;
+}
+
+.form-button,
+.text-button {
+    min-height: 44px;
+    padding: 11px 14px;
+}
+
+.form-button--secondary,
+.text-button {
+    border: 1px solid var(--main-orange);
+    background: #080808;
+    color: var(--main-orange);
+}
+
+.form-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.card-fields {
+    display: grid;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid #2f2f2f;
+    border-radius: 8px;
+    background: #111111;
+}
+
+.card-fields[hidden] {
+    display: none;
+}
+
+.card-field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.card-form-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.account-switch {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    justify-content: center;
+    color: #c7c0b8;
+    text-align: center;
+}
+
+.account-switch a {
+    color: var(--main-orange);
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.account-switch a:hover {
+    text-decoration: underline;
+}
+
+.form-message {
+    min-height: 1.2rem;
+    margin: 4px 0 0;
+    color: #c7c0b8;
+}
+
+.form-message--error {
+    color: #ffb4b4;
+}
+
+.form-message--success {
+    color: #b8f0c6;
+}
+
+.simple-list {
+    display: grid;
+    gap: 10px;
+}
+
+.simple-list p,
+.simple-list-row,
+.favorite-movie-link {
+    margin: 0;
+    padding: 12px;
+    border: 1px solid #2f2f2f;
+    border-radius: 8px;
+    background: #111111;
+    color: #c7c0b8;
+}
+
+.favorite-movie-link {
+    color: #f7f2ea;
+    cursor: pointer;
+    font: inherit;
+    text-align: left;
+    text-decoration: underline;
+}
+
+.favorite-movie-link:hover {
+    color: var(--main-orange);
+}
+
+.simple-list-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+}
+
+.simple-list-row button {
+    min-height: 36px;
+    padding: 8px 10px;
+}
+
+.admin-menu {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+    gap: 14px;
+}
+
+.admin-menu button {
+    min-height: 60px;
+    padding: 14px;
+    text-align: left;
+}
+
 .details-page {
     display: none;
     max-width: 920px;
@@ -599,6 +919,18 @@ h1 {
 
     .nav-links {
         flex-wrap: wrap;
+    }
+
+    .admin-menu {
+        grid-template-columns: 1fr;
+    }
+
+    .favorite-movie-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .card-field-row {
+        grid-template-columns: 1fr;
     }
 
     .search-panel {
