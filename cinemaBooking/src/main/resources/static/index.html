@@ -11,12 +11,15 @@
         <a class="logo" href="index.html">Cinema<span>World</span></a>
 
         <nav class="nav-links" aria-label="Main navigation">
-            <a href="#movies">Movies</a>
-            <a href="#coming-soon">Coming Soon</a>
+            <a href="#movies" data-nav-audience="public,customer">Movies</a>
+            <a href="#coming-soon" data-nav-audience="public,customer">Coming Soon</a>
             <a href="#contact">Contact</a>
-            <button class="nav-button" type="button" data-page="loginPage">Login</button>
-            <button class="nav-button" type="button" data-page="profilePage">Profile</button>
-            <button class="nav-button" type="button" data-page="adminPage">Admin</button>
+            <button class="nav-button" type="button" data-page="loginPage" data-nav-audience="public">Login</button>
+            <button class="nav-button" type="button" data-page="registerPage" data-nav-audience="public">Register</button>
+            <button class="nav-button" type="button" data-page="profilePage" data-nav-audience="customer">Profile</button>
+            <button class="nav-button" type="button" data-page="profilePage" data-nav-audience="customer">Favorites</button>
+            <button class="nav-button" type="button" data-page="adminPage" data-nav-audience="admin">Admin Dashboard</button>
+            <button id="logoutButton" class="nav-button" type="button" data-nav-audience="customer,admin">Logout</button>
         </nav>
     </header>
 
@@ -180,13 +183,15 @@
             <h1>Login</h1>
 
             <form id="loginForm" class="account-form">
+                <p class="form-help"><span>*</span> Required fields</p>
                 <label for="loginEmail">Email <span>*</span></label>
-                <input id="loginEmail" name="email" type="email" required>
+                <input id="loginEmail" name="email" type="email" autocomplete="email" required aria-required="true">
 
                 <label for="loginPassword">Password <span>*</span></label>
-                <input id="loginPassword" name="password" type="password" required>
+                <input id="loginPassword" name="password" type="password" autocomplete="current-password" required aria-required="true">
 
                 <button class="form-button" type="submit">Login</button>
+                <p class="form-help">Demo: use admin@cinemaworld.com for admin navigation; any other email is a customer.</p>
                 <button class="text-button" type="button" data-page="resetPasswordPage">Forgot password?</button>
                 <div class="account-switch">
                     <span>Don't have an account yet?</span>
@@ -202,20 +207,21 @@
             <h1>Register</h1>
 
             <form id="registerForm" class="account-form">
+                <p class="form-help"><span>*</span> Required fields</p>
                 <label for="registerFirstName">First name <span>*</span></label>
-                <input id="registerFirstName" name="firstName" type="text" required>
+                <input id="registerFirstName" name="firstName" type="text" required aria-required="true">
 
                 <label for="registerLastName">Last name <span>*</span></label>
-                <input id="registerLastName" name="lastName" type="text" required>
+                <input id="registerLastName" name="lastName" type="text" required aria-required="true">
 
                 <label for="registerEmail">Email <span>*</span></label>
-                <input id="registerEmail" name="email" type="email" required>
+                <input id="registerEmail" name="email" type="email" autocomplete="email" required aria-required="true">
 
                 <label for="registerPassword">Password <span>*</span></label>
-                <input id="registerPassword" name="password" type="password" required>
+                <input id="registerPassword" name="password" type="password" autocomplete="new-password" required aria-required="true">
 
                 <label for="registerConfirmPassword">Confirm password <span>*</span></label>
-                <input id="registerConfirmPassword" name="confirmPassword" type="password" required>
+                <input id="registerConfirmPassword" name="confirmPassword" type="password" autocomplete="new-password" required aria-required="true">
 
                 <label class="checkbox-row">
                     <input id="registerPromotions" name="promotions" type="checkbox">
@@ -232,8 +238,9 @@
             <h1>Reset Password</h1>
 
             <form id="resetPasswordForm" class="account-form">
+                <p class="form-help"><span>*</span> Required fields</p>
                 <label for="resetEmail">Email <span>*</span></label>
-                <input id="resetEmail" name="email" type="email" required>
+                <input id="resetEmail" name="email" type="email" autocomplete="email" required aria-required="true">
 
                 <button class="form-button" type="submit">Send Reset Link</button>
                 <p id="resetPasswordMessage" class="form-message" role="status" aria-live="polite"></p>
@@ -251,11 +258,12 @@
             <h1>Edit Profile</h1>
 
             <form id="profileForm" class="account-form">
+                <p class="form-help"><span>*</span> Required fields</p>
                 <label for="profileFirstName">First name <span>*</span></label>
-                <input id="profileFirstName" name="firstName" type="text" value="Demo" required>
+                <input id="profileFirstName" name="firstName" type="text" value="Demo" required aria-required="true">
 
                 <label for="profileLastName">Last name <span>*</span></label>
-                <input id="profileLastName" name="lastName" type="text" value="User" required>
+                <input id="profileLastName" name="lastName" type="text" value="User" required aria-required="true">
 
                 <label for="profileEmail">Email</label>
                 <input id="profileEmail" name="email" type="email" value="demo@cinemaworld.com" disabled>
@@ -298,6 +306,7 @@
                 </div>
 
                 <h2>Change Password</h2>
+                <p class="form-help"><span>*</span> All password fields are required when changing your password.</p>
                 <label for="currentPassword">Current password <span>*</span></label>
                 <input id="currentPassword" name="currentPassword" type="password" autocomplete="current-password">
 
@@ -318,13 +327,18 @@
         <section id="adminPage" class="account-page">
             <button class="back-button" type="button" data-page="homePage">Back to Movies</button>
             <p class="small-heading">Admin Prototype</p>
-            <h1>Admin Home</h1>
+            <h1>Admin Dashboard</h1>
+            <p class="admin-intro">Sprint 2 prototype tools. Full management screens will be connected by the admin feature team.</p>
 
             <div class="admin-menu">
-                <button type="button">Manage Movies</button>
-                <button type="button">Promotions</button>
-                <button type="button">Users</button>
-                <button type="button">Showtimes</button>
+                <!-- TODO(teammate): Implement the full Manage Movies admin page and endpoints. -->
+                <button type="button" disabled title="Coming in a teammate's admin implementation">Manage Movies <span>Coming soon</span></button>
+                <!-- TODO(teammate): Implement the full Promotions admin page and endpoints. -->
+                <button type="button" disabled title="Coming in a teammate's admin implementation">Promotions <span>Coming soon</span></button>
+                <!-- TODO(teammate): Implement the full Users admin page and endpoints. -->
+                <button type="button" disabled title="Coming in a teammate's admin implementation">Users <span>Coming soon</span></button>
+                <!-- TODO(teammate): Implement the full Showtimes admin page and endpoints. -->
+                <button type="button" disabled title="Coming in a teammate's admin implementation">Showtimes <span>Coming soon</span></button>
             </div>
         </section>
     </main>

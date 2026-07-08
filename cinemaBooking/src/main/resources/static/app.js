@@ -6,6 +6,20 @@ let movies = [];
 let favoriteMovieIds = [];
 let savedCards = ["Visa ending in 1111", "Mastercard ending in 2222", "Amex ending in 3333"];
 
+const SESSION_USER_KEY = "cinemaWorldCurrentUser";
+let currentUser = readCurrentUser();
+
+// Sprint 2 teammate TODOs:
+// TODO: Replace demo login/roles with backend authentication validation. The login response needs
+//       a stable role field (for example, `role: "CUSTOMER" | "ADMIN"`) plus a server session/token.
+// TODO: Connect registration and registration confirmation email endpoints.
+// TODO: Connect forgot/reset password email and token endpoints; hash passwords on the backend.
+// TODO: Connect profile edits to database saving and send email notifications after profile changes.
+// TODO: Connect favorite movies to the backend instead of keeping them in browser memory.
+// TODO: Move address/payment card limits to backend validation and implement card encryption.
+// TODO: Complete all endpoint connections and full admin pages (movies, promotions, users, showtimes).
+// TODO: Add final server-side security/access-control hardening; these client checks are demo UX only.
+
 // Please insert endpoints
 const sprintTwoEndpoints = {
     register: "/register",
@@ -14,7 +28,8 @@ const sprintTwoEndpoints = {
     profile: "/profile",
     changePassword: "/change-password",
     favorites: "/favorites",
-    addressLookup: "/address-lookup"
+    addressLookup: "/address-lookup",
+    logout: "/logout"
 };
 
 const demoAddressMatches = [
@@ -99,6 +114,8 @@ const paymentCardList = document.querySelector("#paymentCardList");
 const favoriteMovieList = document.querySelector("#favoriteMovieList");
 const profileAddress = document.querySelector("#profileAddress");
 const addressSuggestions = document.querySelector("#addressSuggestions");
+const logoutButton = document.querySelector("#logoutButton");
+const roleNavigationItems = document.querySelectorAll("[data-nav-audience]");
 
 let currentMovieTitle = "";
 let deletingExpirationSlash = false;
@@ -137,6 +154,70 @@ function showBookingFeedback(message, type) {
 function setFormMessage(element, message, type) {
     element.textContent = message;
     element.className = "form-message form-message--" + type;
+}
+
+function readCurrentUser() {
+    try {
+        const storedUser = sessionStorage.getItem(SESSION_USER_KEY);
+        return storedUser ? JSON.parse(storedUser) : null;
+    } catch (error) {
+        sessionStorage.removeItem(SESSION_USER_KEY);
+        return null;
+    }
+}
+
+function getCurrentAudience() {
+    if (!currentUser) {
+        return "public";
+    }
+    return currentUser.role === "ADMIN" ? "admin" : "customer";
+}
+
+function renderNavigation() {
+    const audience = getCurrentAudience();
+    roleNavigationItems.forEach(function (item) {
+        const allowedAudiences = item.dataset.navAudience.split(",");
+        item.hidden = !allowedAudiences.includes(audience);
+    });
+}
+
+function isPageAllowed(pageId) {
+    if (pageId === "adminPage") {
+        return Boolean(currentUser && currentUser.role === "ADMIN");
+    }
+    if (pageId === "profilePage" || pageId === "bookingPage") {
+        return Boolean(currentUser && currentUser.role === "CUSTOMER");
+    }
+    return true;
+}
+
+function handleUnauthorizedPage(pageId) {
+    if (currentUser) {
+        showHomePage();
+        return;
+    }
+    showPage("loginPage");
+    setFormMessage(loginMessage, "Please log in to view that page.", "error");
+}
+
+function validateRequiredFields(form, messageElement) {
+    const emptyRequiredField = Array.from(form.querySelectorAll("[required]")).find(function (field) {
+        return !field.value.trim();
+    });
+
+    if (emptyRequiredField) {
+        setFormMessage(messageElement, "Please complete all required fields.", "error");
+        emptyRequiredField.focus();
+        return false;
+    }
+
+    if (!form.checkValidity()) {
+        setFormMessage(messageElement, "Please correct the highlighted field.", "error");
+        form.reportValidity();
+        return false;
+    }
+
+    return true;
 }
 
 function trimSelectedSeats() {
@@ -327,6 +408,11 @@ function connectShowtimeButtons(movie) {
 }
 
 function showBookingPage(movieTitle, showtime) {
+    if (!isPageAllowed("bookingPage")) {
+        handleUnauthorizedPage("bookingPage");
+        return;
+    }
+
     const selectedMovie = movies.find(function (movie) {
         return movie.title === movieTitle;
     });
@@ -487,6 +573,11 @@ function showHomeSection(sectionId) {
 }
 
 function showPage(pageId) {
+    if (!isPageAllowed(pageId)) {
+        handleUnauthorizedPage(pageId);
+        return;
+    }
+
     detailsTrailer.src = "";
     homePage.style.display = pageId === "homePage" ? "block" : "none";
     movieDetailsPage.style.display = "none";
@@ -690,32 +781,59 @@ function checkExpirationBackspace(event) {
 
 function handleLogin(event) {
     event.preventDefault();
-    // Please insert endpoints
-    setFormMessage(loginMessage, "endpoints not connected yet", "success");
+    if (!validateRequiredFields(loginForm, loginMessage)) {
+        return;
+    }
+
+    const email = loginForm.email.value.trim().toLowerCase();
+
+    // TODO(teammate): Replace this demo role assignment with the authenticated backend response's
+    // `role` field and store only the server-approved session/token data.
+    const demoRole = email === "admin@cinemaworld.com" ? "ADMIN" : "CUSTOMER";
+    currentUser = { email: email, role: demoRole };
+    sessionStorage.setItem(SESSION_USER_KEY, JSON.stringify(currentUser));
+    renderNavigation();
+    loginForm.reset();
+
+    if (demoRole === "ADMIN") {
+        showPage("adminPage");
+    } else {
+        showHomePage();
+    }
 }
 
 function handleRegister(event) {
     event.preventDefault();
+
+    if (!validateRequiredFields(registerForm, registerMessage)) {
+        return;
+    }
 
     if (registerForm.password.value !== registerForm.confirmPassword.value) {
         setFormMessage(registerMessage, "Passwords must match.", "error");
         return;
     }
 
-    // Please insert endpoints
-    setFormMessage(registerMessage, "endpoints not connected yet", "success");
+    // TODO(teammate): Connect registration, password hashing, and confirmation email endpoints.
+    setFormMessage(registerMessage, "Registration form is ready; account creation is not connected yet.", "success");
 }
 
 function handleResetPassword(event) {
     event.preventDefault();
-    // Please insert endpoints
-    setFormMessage(resetPasswordMessage, "endpoints not connected yet", "success");
+    if (!validateRequiredFields(resetPasswordForm, resetPasswordMessage)) {
+        return;
+    }
+    // TODO(teammate): Connect forgot/reset password email delivery and secure token validation.
+    setFormMessage(resetPasswordMessage, "Reset request is ready; email delivery is not connected yet.", "success");
 }
 
 function handleProfileSave(event) {
     event.preventDefault();
-    // Please insert endpoints
-    setFormMessage(profileMessage, "endpoints not connected yet", "success");
+    if (!validateRequiredFields(profileForm, profileMessage)) {
+        return;
+    }
+    // TODO(teammate): Save profile changes to the database and email the user after changes.
+    setFormMessage(profileMessage, "Profile changes look valid; database saving is not connected yet.", "success");
 }
 
 function handleChangePassword() {
@@ -734,8 +852,20 @@ function handleChangePassword() {
         return;
     }
 
-    // Please insert endpoints
-    setFormMessage(changePasswordMessage, "endpoints not connected yet", "success");
+    // TODO(teammate): Connect backend password validation and secure password hashing.
+    setFormMessage(changePasswordMessage, "Password change is valid; secure backend saving is not connected yet.", "success");
+}
+
+function handleLogout() {
+    // TODO(teammate): Call sprintTwoEndpoints.logout when backend session invalidation is available.
+    currentUser = null;
+    sessionStorage.removeItem(SESSION_USER_KEY);
+    localStorage.removeItem(SESSION_USER_KEY);
+    sessionStorage.removeItem("authToken");
+    localStorage.removeItem("authToken");
+    renderNavigation();
+    showPage("loginPage");
+    setFormMessage(loginMessage, "You have been logged out.", "success");
 }
 
 function loadGenres() {
@@ -777,6 +907,7 @@ loginForm.addEventListener("submit", handleLogin);
 registerForm.addEventListener("submit", handleRegister);
 resetPasswordForm.addEventListener("submit", handleResetPassword);
 profileForm.addEventListener("submit", handleProfileSave);
+logoutButton.addEventListener("click", handleLogout);
 
 document.querySelectorAll("[data-page]").forEach(function (button) {
     button.addEventListener("click", function (event) {
@@ -799,9 +930,14 @@ document.querySelectorAll(".counter-button").forEach(function (button) {
 });
 
 async function init() {
-    await loadMovies();
-    loadGenres();
-    renderMovies();
+    renderNavigation();
+    try {
+        await loadMovies();
+        loadGenres();
+        renderMovies();
+    } catch (error) {
+        document.querySelector("#moviesError").hidden = false;
+    }
 }
 
 init();
