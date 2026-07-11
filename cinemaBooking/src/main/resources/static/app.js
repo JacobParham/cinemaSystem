@@ -4,7 +4,7 @@
 
 let movies = [];
 let favoriteMovieIds = [];
-let savedCards = ["Visa ending in 1111", "Mastercard ending in 2222", "Amex ending in 3333"];
+let savedCards = [];
 
 const SESSION_USER_KEY = "cinemaWorldCurrentUser";
 let currentUser = readCurrentUser();
@@ -20,7 +20,6 @@ let currentUser = readCurrentUser();
 // TODO: Complete all endpoint connections and full admin pages (movies, promotions, users, showtimes).
 // TODO: Add final server-side security/access-control hardening; these client checks are demo UX only.
 
-// Please insert endpoints
 const sprintTwoEndpoints = {
     register: "/register",
     login: "/login",
@@ -30,7 +29,9 @@ const sprintTwoEndpoints = {
     changePassword: "/change-password",
     favorites: "/favorites",
     addressLookup: "/address-lookup",
-    logout: "/logout"
+    logout: "/logout",
+    cards: "/profile/cards",
+    removeCard: "/profile/cards/remove"
 };
 
 const demoAddressMatches = [
@@ -90,12 +91,17 @@ const backToDetailsButton = document.querySelector("#backToDetailsButton");
 const bookingBackToMoviesButton = document.querySelector("#bookingBackToMoviesButton");
 const loginForm = document.querySelector("#loginForm");
 const registerForm = document.querySelector("#registerForm");
+const forgotPasswordForm = document.querySelector("#forgotPasswordForm");
 const resetPasswordForm = document.querySelector("#resetPasswordForm");
+const forgotStep1 = document.querySelector("#forgotStep1");
+const forgotStep2 = document.querySelector("#forgotStep2");
 const profileForm = document.querySelector("#profileForm");
 const loginMessage = document.querySelector("#loginMessage");
 const registerMessage = document.querySelector("#registerMessage");
+const forgotPasswordMessage = document.querySelector("#forgotPasswordMessage");
 const resetPasswordMessage = document.querySelector("#resetPasswordMessage");
 const profileMessage = document.querySelector("#profileMessage");
+const resetToken = document.querySelector("#resetToken");
 const resetNewPassword = document.querySelector("#resetNewPassword");
 const resetConfirmNewPassword = document.querySelector("#resetConfirmNewPassword");
 const addCardButton = document.querySelector("#addCardButton");
@@ -591,30 +597,82 @@ function showPage(pageId) {
     });
 
     if (pageId === "profilePage") {
-        renderPaymentCards();
-        renderFavoriteMovies();
+        loadProfile();
+    }
+
+    if (pageId === "resetPasswordPage") {
+        forgotStep1.hidden = false;
+        forgotStep2.hidden = true;
     }
 
     window.scrollTo(0, 0);
 }
 
+async function loadProfile() {
+    try {
+        const response = await fetch(sprintTwoEndpoints.profile);
+        if (!response.ok) {
+            if (response.status === 401) {
+                showPage("loginPage");
+                setFormMessage(loginMessage, "Please log in to view your profile.", "error");
+            }
+            return;
+        }
+        const data = await response.json();
+        document.querySelector("#profileFirstName").value = data.firstName || "";
+        document.querySelector("#profileLastName").value = data.lastName || "";
+        document.querySelector("#profileEmail").value = data.email || "";
+        document.querySelector("#registerPromotions") && (document.querySelector("#profilePromotions") || null);
+        if (document.querySelector("#profilePromotions")) {
+            document.querySelector("#profilePromotions").checked = data.promotions || false;
+        }
+
+        // Store cards from backend and render
+        savedCards = (data.cards || []).map(function (c) {
+            return { cardId: c.cardId, label: "Card ending in " + c.last4, last4: c.last4 };
+        });
+        renderPaymentCards();
+        renderFavoriteMovies();
+    } catch (error) {
+        setFormMessage(profileMessage, "Could not load profile data.", "error");
+    }
+}
+
 function renderPaymentCards() {
     addCardButton.disabled = savedCards.length >= 3;
     paymentCardList.innerHTML = savedCards.map(function (card, index) {
+        const label = card.label || card;
+        const cardId = card.cardId;
         return `
             <div class="simple-list-row">
-                <span>${card}</span>
-                <button type="button" data-card-index="${index}">Remove</button>
+                <span>${label}</span>
+                <button type="button" data-card-index="${index}" data-card-id="${cardId || ""}">Remove</button>
             </div>
         `;
     }).join("");
 
     document.querySelectorAll("[data-card-index]").forEach(function (button) {
-        button.addEventListener("click", function () {
+        button.addEventListener("click", async function () {
+            const cardId = button.dataset.cardId;
+            if (cardId) {
+                try {
+                    const resp = await fetch(sprintTwoEndpoints.cards + "/" + cardId, {
+                        method: "DELETE"
+                    });
+                    const data = await resp.json();
+                    if (!resp.ok) {
+                        setFormMessage(profileMessage, data.message || "Could not remove card.", "error");
+                        return;
+                    }
+                } catch (e) {
+                    setFormMessage(profileMessage, "Could not remove card.", "error");
+                    return;
+                }
+            }
             savedCards.splice(Number(button.dataset.cardIndex), 1);
             renderPaymentCards();
             hideCardFields();
-            setFormMessage(profileMessage, "Card removed. Save profile when ready.", "success");
+            setFormMessage(profileMessage, "Card removed.", "success");
         });
     });
 }
@@ -676,7 +734,7 @@ function hideCardFields() {
     setFormMessage(cardMessage, "", "success");
 }
 
-function saveCard() {
+async function saveCard() {
     const cardDigits = cardNumber.value.replace(/\D/g, "");
     const cvvDigits = cardCvv.value.replace(/\D/g, "");
     const expirationError = getCardExpirationError();
@@ -706,11 +764,29 @@ function saveCard() {
         return;
     }
 
-    // Please insert endpoints
-    savedCards.push("Card ending in " + cardDigits.slice(-4));
-    hideCardFields();
-    renderPaymentCards();
-    setFormMessage(profileMessage, "Card added. Save profile when ready.", "success");
+    try {
+        const response = await fetch(sprintTwoEndpoints.cards, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                cardHolder: cardName.value.trim(),
+                cardNumber: cardDigits,
+                expiration: cardExpiration.value.trim(),
+                cvv: cvvDigits
+            })
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            setFormMessage(cardMessage, data.message || "Could not save card.", "error");
+            return;
+        }
+        savedCards.push({ cardId: data.cardId, label: "Card ending in " + data.last4, last4: data.last4 });
+        hideCardFields();
+        renderPaymentCards();
+        setFormMessage(profileMessage, "Card added successfully.", "success");
+    } catch (error) {
+        setFormMessage(cardMessage, "Could not save card. Please try again.", "error");
+    }
 }
 
 function formatCardNumber() {
@@ -855,67 +931,103 @@ async function handleRegister(event) {
     }
 }
 
-function handleResetPassword(event) {
+async function handleForgotPassword(event) {
+    event.preventDefault();
+    if (!validateRequiredFields(forgotPasswordForm, forgotPasswordMessage)) {
+        return;
+    }
+
+    const email = forgotPasswordForm.querySelector("input[name='email']").value.trim().toLowerCase();
+
+    try {
+        const response = await fetch(sprintTwoEndpoints.forgotPassword, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: email })
+        });
+        const data = await response.json();
+        setFormMessage(forgotPasswordMessage, data.message || "If that email is registered, a reset link has been sent.", "success");
+        // Advance to step 2 so user can enter their token
+        forgotStep1.hidden = true;
+        forgotStep2.hidden = false;
+    } catch (error) {
+        setFormMessage(forgotPasswordMessage, "Could not send reset email. Please try again.", "error");
+    }
+}
+
+async function handleResetPassword(event) {
     event.preventDefault();
     if (!validateRequiredFields(resetPasswordForm, resetPasswordMessage)) {
         return;
     }
 
-    const emailField = resetPasswordForm.querySelector("input[name='email']");
-    const passwordField = resetNewPassword;
-    const confirmPasswordField = resetConfirmNewPassword;
+    const tokenValue = resetToken.value.trim();
+    const passwordValue = resetNewPassword.value;
+    const confirmValue = resetConfirmNewPassword.value;
 
-    if (!emailField.checkValidity()) {
-        setFormMessage(resetPasswordMessage, "Please enter a valid email address.", "error");
-        emailField.focus();
-        return;
-    }
-
-    if (passwordField.value !== confirmPasswordField.value) {
+    if (passwordValue !== confirmValue) {
         setFormMessage(resetPasswordMessage, "New passwords must match.", "error");
-        confirmPasswordField.focus();
+        resetConfirmNewPassword.focus();
         return;
     }
 
-    if (passwordField.value.length < 8) {
+    if (passwordValue.length < 8) {
         setFormMessage(resetPasswordMessage, "New password must be at least 8 characters.", "error");
-        passwordField.focus();
+        resetNewPassword.focus();
         return;
     }
 
-    const email = emailField.value.trim().toLowerCase();
-    const newPassword = passwordField.value;
-
-    fetch(sprintTwoEndpoints.resetPassword, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email, newPassword: newPassword })
-    })
-        .then(async function (response) {
-            const data = await response.json().catch(function () {
-                return {};
-            });
-            if (!response.ok) {
-                throw new Error(data.message || "Unable to reset password.");
-            }
-            setFormMessage(resetPasswordMessage, data.message || "Your password has been reset successfully.", "success");
-            resetPasswordForm.reset();
-        })
-        .catch(function (error) {
-            setFormMessage(resetPasswordMessage, error.message, "error");
+    try {
+        const response = await fetch(sprintTwoEndpoints.resetPassword, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: tokenValue, newPassword: passwordValue })
         });
+        const data = await response.json();
+        if (!response.ok) {
+            setFormMessage(resetPasswordMessage, data.message || "Unable to reset password.", "error");
+            return;
+        }
+        setFormMessage(resetPasswordMessage, data.message || "Password reset successfully. You can now log in.", "success");
+        resetPasswordForm.reset();
+        forgotPasswordForm.reset();
+        // Return to step 1 for next time
+        forgotStep1.hidden = false;
+        forgotStep2.hidden = true;
+    } catch (error) {
+        setFormMessage(resetPasswordMessage, "Could not reset password. Please try again.", "error");
+    }
 }
 
-function handleProfileSave(event) {
+async function handleProfileSave(event) {
     event.preventDefault();
     if (!validateRequiredFields(profileForm, profileMessage)) {
         return;
     }
-    // TODO(teammate): Save profile changes to the database and email the user after changes.
-    setFormMessage(profileMessage, "Profile changes look valid; database saving is not connected yet.", "success");
+
+    try {
+        const response = await fetch(sprintTwoEndpoints.profile, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                firstName: document.querySelector("#profileFirstName").value.trim(),
+                lastName: document.querySelector("#profileLastName").value.trim(),
+                promotions: document.querySelector("#profilePromotions") ?
+                    document.querySelector("#profilePromotions").checked : undefined
+            })
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            setFormMessage(profileMessage, data.message || "Could not save profile.", "error");
+            return;
+        }
+        setFormMessage(profileMessage, data.message || "Profile saved successfully.", "success");
+    } catch (error) {
+        setFormMessage(profileMessage, "Could not save profile. Please try again.", "error");
+    }
 }
 
-function handleChangePassword() {
+async function handleChangePassword() {
     if (!currentPassword.value || !newPassword.value || !confirmNewPassword.value) {
         setFormMessage(changePasswordMessage, "Please complete all password fields.", "error");
         return;
@@ -931,12 +1043,35 @@ function handleChangePassword() {
         return;
     }
 
-    // TODO(teammate): Connect backend password validation and secure password hashing.
-    setFormMessage(changePasswordMessage, "Password change is valid; secure backend saving is not connected yet.", "success");
+    try {
+        const response = await fetch(sprintTwoEndpoints.changePassword, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                currentPassword: currentPassword.value,
+                newPassword: newPassword.value
+            })
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            setFormMessage(changePasswordMessage, data.message || "Could not change password.", "error");
+            return;
+        }
+        setFormMessage(changePasswordMessage, data.message || "Password changed successfully.", "success");
+        currentPassword.value = "";
+        newPassword.value = "";
+        confirmNewPassword.value = "";
+    } catch (error) {
+        setFormMessage(changePasswordMessage, "Could not change password. Please try again.", "error");
+    }
 }
 
-function handleLogout() {
-    // TODO(teammate): Call sprintTwoEndpoints.logout when backend session invalidation is available.
+async function handleLogout() {
+    try {
+        await fetch(sprintTwoEndpoints.logout, { method: "POST" });
+    } catch (e) {
+        // proceed with local cleanup even if server call fails
+    }
     currentUser = null;
     sessionStorage.removeItem(SESSION_USER_KEY);
     localStorage.removeItem(SESSION_USER_KEY);
@@ -984,6 +1119,7 @@ profileAddress.addEventListener("input", renderAddressSuggestions);
 changePasswordButton.addEventListener("click", handleChangePassword);
 loginForm.addEventListener("submit", handleLogin);
 registerForm.addEventListener("submit", handleRegister);
+forgotPasswordForm.addEventListener("submit", handleForgotPassword);
 resetPasswordForm.addEventListener("submit", handleResetPassword);
 profileForm.addEventListener("submit", handleProfileSave);
 logoutButton.addEventListener("click", handleLogout);

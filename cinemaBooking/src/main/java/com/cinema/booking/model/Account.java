@@ -14,7 +14,7 @@ public class Account {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "account_id")
-    private int accountId;
+    private Integer accountId;
 
     @Column(name = "first_name", nullable = false)
     private String firstName;
@@ -22,19 +22,20 @@ public class Account {
     @Column(name = "last_name", nullable = false)
     private String lastName;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "email", nullable = false, unique = true)
     private String email;
 
-    @Column(nullable = false)
+    @Column(name = "password", nullable = false)
     private String password;
 
     @Column(name = "promotions", nullable = false)
-    private boolean promotions;
+    private Boolean promotions = false;
 
-    @Column(nullable = false)
+    @Column(name = "role", nullable = false)
     private String role = "CUSTOMER";
 
-    public Account() {}
+    public Account() {
+    }
 
     public Account(String firstName, String lastName, String email, String password, boolean promotions, String role) {
         this.firstName = firstName;
@@ -45,24 +46,59 @@ public class Account {
         this.role = role;
     }
 
-    public int getAccountId() { return accountId; }
-    public void setAccountId(int accountId) { this.accountId = accountId; }
+    public Integer getAccountId() {
+        return accountId;
+    }
 
-    public String getFirstName() { return firstName; }
-    public void setFirstName(String firstName) { this.firstName = firstName; }
+    public void setAccountId(Integer accountId) {
+        this.accountId = accountId;
+    }
 
-    public String getLastName() { return lastName; }
-    public void setLastName(String lastName) { this.lastName = lastName; }
+    public String getFirstName() {
+        return firstName;
+    }
 
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
 
-    public String getPassword() { return password; }
-    public void setPassword(String password) { this.password = password; }
+    public String getLastName() {
+        return lastName;
+    }
 
-    public boolean isPromotions() { return promotions; }
-    public void setPromotions(boolean promotions) { this.promotions = promotions; }
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
 
-    public String getRole() { return role; }
-    public void setRole(String role) { this.role = role; }
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public Boolean getPromotions() {
+        return promotions;
+    }
+
+    public void setPromotions(Boolean promotions) {
+        this.promotions = promotions;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
 }

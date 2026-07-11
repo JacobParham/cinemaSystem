@@ -237,20 +237,37 @@
             <button class="back-button" type="button" data-page="loginPage">Back to Login</button>
             <h1>Reset Password</h1>
 
-            <form id="resetPasswordForm" class="account-form">
-                <p class="form-help"><span>*</span> Required fields</p>
-                <label for="resetEmail">Email <span>*</span></label>
-                <input id="resetEmail" name="email" type="email" autocomplete="email" required aria-required="true">
+            <!-- Step 1: request the reset email -->
+            <div id="forgotStep1">
+                <p class="form-help">Enter your email address and we'll send you a reset link.</p>
+                <form id="forgotPasswordForm" class="account-form">
+                    <p class="form-help"><span>*</span> Required fields</p>
+                    <label for="forgotEmail">Email <span>*</span></label>
+                    <input id="forgotEmail" name="email" type="email" autocomplete="email" required aria-required="true">
 
-                <label for="resetNewPassword">New password <span>*</span></label>
-                <input id="resetNewPassword" name="newPassword" type="password" autocomplete="new-password" required aria-required="true">
+                    <button class="form-button" type="submit">Send Reset Link</button>
+                    <p id="forgotPasswordMessage" class="form-message" role="status" aria-live="polite"></p>
+                </form>
+            </div>
 
-                <label for="resetConfirmNewPassword">Confirm new password <span>*</span></label>
-                <input id="resetConfirmNewPassword" name="confirmNewPassword" type="password" autocomplete="new-password" required aria-required="true">
+            <!-- Step 2: enter the token from the email + new password -->
+            <div id="forgotStep2" hidden>
+                <p class="form-help">Enter the reset token from the email you received, then set your new password.</p>
+                <form id="resetPasswordForm" class="account-form">
+                    <p class="form-help"><span>*</span> Required fields</p>
+                    <label for="resetToken">Reset token <span>*</span></label>
+                    <input id="resetToken" name="token" type="text" required aria-required="true" placeholder="Paste token from email">
 
-                <button class="form-button" type="submit">Reset Password</button>
-                <p id="resetPasswordMessage" class="form-message" role="status" aria-live="polite"></p>
-            </form>
+                    <label for="resetNewPassword">New password <span>*</span></label>
+                    <input id="resetNewPassword" name="newPassword" type="password" autocomplete="new-password" required aria-required="true">
+
+                    <label for="resetConfirmNewPassword">Confirm new password <span>*</span></label>
+                    <input id="resetConfirmNewPassword" name="confirmNewPassword" type="password" autocomplete="new-password" required aria-required="true">
+
+                    <button class="form-button" type="submit">Reset Password</button>
+                    <p id="resetPasswordMessage" class="form-message" role="status" aria-live="polite"></p>
+                </form>
+            </div>
         </section>
 
         <section id="profilePage" class="account-page">

@@ -1,13 +1,16 @@
 package com.cinema.booking.controller;
 
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -16,15 +19,23 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.cinema.booking.model.Account;
 import com.cinema.booking.model.PaymentCard;
+import com.cinema.booking.repository.AccountRepository;
+import com.cinema.booking.repository.PaymentCardRepository;
 import com.cinema.booking.service.AccountService;
 
 @RestController
 public class AccountController {
 
     private final AccountService accountService;
+    private final AccountRepository accountRepository;
+    private final PaymentCardRepository paymentCardRepository;
 
-    public AccountController(AccountService accountService) {
+    public AccountController(AccountService accountService,
+                             AccountRepository accountRepository,
+                             PaymentCardRepository paymentCardRepository) {
         this.accountService = accountService;
+        this.accountRepository = accountRepository;
+        this.paymentCardRepository = paymentCardRepository;
     }
 
     @PostMapping({"/register", "/accounts/register"})
@@ -50,6 +61,32 @@ public class AccountController {
     private String currentUserEmail() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return auth == null ? null : auth.getName();
+    }
+
+    @GetMapping("/profile")
+    public ResponseEntity<?> getProfile() {
+        String email = currentUserEmail();
+        if (email == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Not authenticated"));
+
+        return accountRepository.findByEmailIgnoreCase(email)
+                .<ResponseEntity<?>>map(account -> {
+                    List<PaymentCard> cards = paymentCardRepository.findByAccountAccountId(account.getAccountId());
+                    List<Map<String, Object>> cardList = cards.stream().map(c -> Map.<String, Object>of(
+                            "cardId",     c.getCardId(),
+                            "cardHolder", c.getCardHolder(),
+                            "last4",      c.getLast4(),
+                            "expiration", c.getExpiration()
+                    )).collect(Collectors.toList());
+
+                    return ResponseEntity.ok(Map.of(
+                            "firstName",  account.getFirstName(),
+                            "lastName",   account.getLastName(),
+                            "email",      account.getEmail(),
+                            "promotions", account.getPromotions(),
+                            "cards",      cardList
+                    ));
+                })
+                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "Account not found")));
     }
 
     @PostMapping("/change-password")
