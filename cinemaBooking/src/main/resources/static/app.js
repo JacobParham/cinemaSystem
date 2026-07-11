@@ -24,7 +24,8 @@ let currentUser = readCurrentUser();
 const sprintTwoEndpoints = {
     register: "/register",
     login: "/login",
-    resetPassword: "/password-reset",
+    forgotPassword: "/forgot-password",
+    resetPassword: "/reset-password",
     profile: "/profile",
     changePassword: "/change-password",
     favorites: "/favorites",
@@ -95,6 +96,8 @@ const loginMessage = document.querySelector("#loginMessage");
 const registerMessage = document.querySelector("#registerMessage");
 const resetPasswordMessage = document.querySelector("#resetPasswordMessage");
 const profileMessage = document.querySelector("#profileMessage");
+const resetNewPassword = document.querySelector("#resetNewPassword");
+const resetConfirmNewPassword = document.querySelector("#resetConfirmNewPassword");
 const addCardButton = document.querySelector("#addCardButton");
 const saveCardButton = document.querySelector("#saveCardButton");
 const cancelCardButton = document.querySelector("#cancelCardButton");
@@ -779,30 +782,43 @@ function checkExpirationBackspace(event) {
         cardExpiration.value.endsWith("/");
 }
 
-function handleLogin(event) {
+async function handleLogin(event) {
     event.preventDefault();
     if (!validateRequiredFields(loginForm, loginMessage)) {
         return;
     }
 
     const email = loginForm.email.value.trim().toLowerCase();
+    const password = loginForm.password.value;
 
-    // TODO(teammate): Replace this demo role assignment with the authenticated backend response's
-    // `role` field and store only the server-approved session/token data.
-    const demoRole = email === "admin@cinemaworld.com" ? "ADMIN" : "CUSTOMER";
-    currentUser = { email: email, role: demoRole };
-    sessionStorage.setItem(SESSION_USER_KEY, JSON.stringify(currentUser));
-    renderNavigation();
-    loginForm.reset();
+    try {
+        const response = await fetch(sprintTwoEndpoints.login, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: email, password: password })
+        });
 
-    if (demoRole === "ADMIN") {
-        showPage("adminPage");
-    } else {
-        showHomePage();
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.message || "Invalid credentials");
+        }
+
+        currentUser = { email: data.email, role: data.role };
+        sessionStorage.setItem(SESSION_USER_KEY, JSON.stringify(currentUser));
+        renderNavigation();
+        loginForm.reset();
+
+        if (data.role === "ADMIN") {
+            showPage("adminPage");
+        } else {
+            showHomePage();
+        }
+    } catch (error) {
+        setFormMessage(loginMessage, error.message, "error");
     }
 }
 
-function handleRegister(event) {
+async function handleRegister(event) {
     event.preventDefault();
 
     if (!validateRequiredFields(registerForm, registerMessage)) {
@@ -814,8 +830,29 @@ function handleRegister(event) {
         return;
     }
 
-    // TODO(teammate): Connect registration, password hashing, and confirmation email endpoints.
-    setFormMessage(registerMessage, "Registration form is ready; account creation is not connected yet.", "success");
+    try {
+        const response = await fetch(sprintTwoEndpoints.register, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                firstName: registerForm.firstName.value.trim(),
+                lastName: registerForm.lastName.value.trim(),
+                email: registerForm.email.value.trim().toLowerCase(),
+                password: registerForm.password.value,
+                promotions: registerForm.promotions.checked
+            })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.message || "Unable to create account.");
+        }
+
+        setFormMessage(registerMessage, data.message || "Account created successfully.", "success");
+        registerForm.reset();
+    } catch (error) {
+        setFormMessage(registerMessage, error.message, "error");
+    }
 }
 
 function handleResetPassword(event) {
@@ -823,8 +860,50 @@ function handleResetPassword(event) {
     if (!validateRequiredFields(resetPasswordForm, resetPasswordMessage)) {
         return;
     }
-    // TODO(teammate): Connect forgot/reset password email delivery and secure token validation.
-    setFormMessage(resetPasswordMessage, "Reset request is ready; email delivery is not connected yet.", "success");
+
+    const emailField = resetPasswordForm.querySelector("input[name='email']");
+    const passwordField = resetNewPassword;
+    const confirmPasswordField = resetConfirmNewPassword;
+
+    if (!emailField.checkValidity()) {
+        setFormMessage(resetPasswordMessage, "Please enter a valid email address.", "error");
+        emailField.focus();
+        return;
+    }
+
+    if (passwordField.value !== confirmPasswordField.value) {
+        setFormMessage(resetPasswordMessage, "New passwords must match.", "error");
+        confirmPasswordField.focus();
+        return;
+    }
+
+    if (passwordField.value.length < 8) {
+        setFormMessage(resetPasswordMessage, "New password must be at least 8 characters.", "error");
+        passwordField.focus();
+        return;
+    }
+
+    const email = emailField.value.trim().toLowerCase();
+    const newPassword = passwordField.value;
+
+    fetch(sprintTwoEndpoints.resetPassword, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email, newPassword: newPassword })
+    })
+        .then(async function (response) {
+            const data = await response.json().catch(function () {
+                return {};
+            });
+            if (!response.ok) {
+                throw new Error(data.message || "Unable to reset password.");
+            }
+            setFormMessage(resetPasswordMessage, data.message || "Your password has been reset successfully.", "success");
+            resetPasswordForm.reset();
+        })
+        .catch(function (error) {
+            setFormMessage(resetPasswordMessage, error.message, "error");
+        });
 }
 
 function handleProfileSave(event) {

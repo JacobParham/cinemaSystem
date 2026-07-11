@@ -242,7 +242,13 @@
                 <label for="resetEmail">Email <span>*</span></label>
                 <input id="resetEmail" name="email" type="email" autocomplete="email" required aria-required="true">
 
-                <button class="form-button" type="submit">Send Reset Link</button>
+                <label for="resetNewPassword">New password <span>*</span></label>
+                <input id="resetNewPassword" name="newPassword" type="password" autocomplete="new-password" required aria-required="true">
+
+                <label for="resetConfirmNewPassword">Confirm new password <span>*</span></label>
+                <input id="resetConfirmNewPassword" name="confirmNewPassword" type="password" autocomplete="new-password" required aria-required="true">
+
+                <button class="form-button" type="submit">Reset Password</button>
                 <p id="resetPasswordMessage" class="form-message" role="status" aria-live="polite"></p>
             </form>
         </section>

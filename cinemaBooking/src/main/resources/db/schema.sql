@@ -17,6 +17,16 @@ CREATE TABLE IF NOT EXISTS showtimes (
     FOREIGN KEY (movie_id) REFERENCES movies(movie_id)
 );
 
+CREATE TABLE IF NOT EXISTS accounts (
+    account_id INT AUTO_INCREMENT PRIMARY KEY,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    promotions BOOLEAN NOT NULL DEFAULT FALSE,
+    role VARCHAR(50) NOT NULL DEFAULT 'CUSTOMER'
+);
+
 CREATE TABLE IF NOT EXISTS bookings (
     booking_id INT AUTO_INCREMENT PRIMARY KEY,
     showtime_id INT NOT NULL,
@@ -25,4 +35,15 @@ CREATE TABLE IF NOT EXISTS bookings (
     senior_tickets INT DEFAULT 0,
     total_price DECIMAL(10,2),
     FOREIGN KEY (showtime_id) REFERENCES showtimes(showtime_id)
+);
+
+CREATE TABLE IF NOT EXISTS payment_cards (
+    card_id INT AUTO_INCREMENT PRIMARY KEY,
+    account_id INT NOT NULL,
+    card_holder VARCHAR(255) NOT NULL,
+    card_number_enc TEXT NOT NULL,
+    card_last4 VARCHAR(4) NOT NULL,
+    expiration VARCHAR(10) NOT NULL,
+    cvv_enc TEXT,
+    FOREIGN KEY (account_id) REFERENCES accounts(account_id)
 );

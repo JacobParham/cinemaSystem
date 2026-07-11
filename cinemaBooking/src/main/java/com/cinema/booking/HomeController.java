@@ -1,14 +1,13 @@
 package com.cinema.booking;
 
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.servlet.view.RedirectView;
+import org.springframework.web.bind.annotation.RestController;
 
-@Controller
+@RestController
 public class HomeController {
 
     @GetMapping("/")
-    public RedirectView home() {
-        return new RedirectView("/index.html");
+    public String home() {
+        return "Cinema Booking Application is running.";
     }
 }

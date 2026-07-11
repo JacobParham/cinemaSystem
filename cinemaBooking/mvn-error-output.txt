@@ -1,0 +1,62 @@
+﻿[INFO] Scanning for projects...
+[INFO] 
+[INFO] ----------------------< com.cinema:cinemaBooking >----------------------
+[INFO] Building cinemaBooking 1.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] >>> spring-boot:3.3.13:run (default-cli) > test-compile @ cinemaBooking >>>
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ cinemaBooking ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 5 resources from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ cinemaBooking ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 14 source files with javac [debug parameters release 21] to target\classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ cinemaBooking ---
+[INFO] skip non existing resourceDirectory C:\Users\zaara\OneDrive\Documents\swe\cinemaSystem\cinemaBooking\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ cinemaBooking ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 1 source file with javac [debug parameters release 21] to target\test-classes
+[INFO] 
+[INFO] <<< spring-boot:3.3.13:run (default-cli) < test-compile @ cinemaBooking <<<
+[INFO] 
+[INFO] 
+[INFO] --- spring-boot:3.3.13:run (default-cli) @ cinemaBooking ---
+[INFO] Attaching agents: []
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.3.13)
+
+2026-06-29T22:42:59.147-04:00  INFO 28120 --- [           main] c.c.booking.CinemaBookingApplication     : Starting CinemaBookingApplication using Java 21.0.11 with PID 28120 (C:\Users\zaara\OneDrive\Documents\swe\cinemaSystem\cinemaBooking\target\classes started by zaara in C:\Users\zaara\OneDrive\Documents\swe\cinemaSystem\cinemaBooking)
+2026-06-29T22:42:59.161-04:00  INFO 28120 --- [           main] c.c.booking.CinemaBookingApplication     : No active profile set, falling back to 1 default profile: "default"
+2026-06-29T22:43:00.968-04:00  INFO 28120 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-06-29T22:43:01.157-04:00  INFO 28120 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 163 ms. Found 3 JPA repository interfaces.
+2026-06-29T22:43:02.417-04:00  INFO 28120 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-06-29T22:43:02.458-04:00  INFO 28120 --- [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-06-29T22:43:02.460-04:00  INFO 28120 --- [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.42]
+2026-06-29T22:43:02.607-04:00  INFO 28120 --- [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-06-29T22:43:02.607-04:00  INFO 28120 --- [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 3315 ms
+2026-06-29T22:43:02.860-04:00  INFO 28120 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-06-29T22:43:03.717-04:00  INFO 28120 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@373052b5
+2026-06-29T22:43:03.721-04:00  INFO 28120 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-06-29T22:43:04.005-04:00  INFO 28120 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-06-29T22:43:04.221-04:00  INFO 28120 --- [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.5.3.Final
+2026-06-29T22:43:04.333-04:00  INFO 28120 --- [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-06-29T22:43:05.277-04:00  INFO 28120 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-06-29T22:43:07.872-04:00  INFO 28120 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-06-29T22:43:07.885-04:00  INFO 28120 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-06-29T22:43:09.028-04:00  WARN 28120 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-06-29T22:43:09.128-04:00  INFO 28120 --- [           main] o.s.b.a.w.s.WelcomePageHandlerMapping    : Adding welcome page: class path resource [static/index.html]
+2026-06-29T22:43:09.986-04:00  INFO 28120 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+2026-06-29T22:43:09.996-04:00  INFO 28120 --- [           main] c.c.booking.CinemaBookingApplication     : Started CinemaBookingApplication in 11.999 seconds (process running for 13.018)
+Hibernate: select count(*) from movies m1_0
