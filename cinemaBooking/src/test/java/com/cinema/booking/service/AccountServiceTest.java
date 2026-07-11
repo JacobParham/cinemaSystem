@@ -57,7 +57,7 @@ class AccountServiceTest {
         assertThat(saved.getLastName()).isEqualTo("User");
         assertThat(saved.getEmail()).isEqualTo("new.user@example.com");
         assertThat(saved.getPassword()).isEqualTo("hashed-password");
-        assertThat(saved.isPromotions()).isFalse();
+        assertThat(saved.getPromotions()).isFalse();
         assertThat(saved.getRole()).isEqualTo("CUSTOMER");
         assertThat(savedAccount.getPassword()).isEqualTo("hashed-password");
     }

@@ -12,3 +12,6 @@ Thumbs.db
 
 # Local runtime logs
 cinemaBooking/mvn-run-output*.txt
+
+# Secrets — never commit credentials
+cinemaBooking/src/main/resources/application.properties
