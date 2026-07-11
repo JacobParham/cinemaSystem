@@ -2,9 +2,6 @@ package com.cinema.booking.controller;
 
 import java.util.Map;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -17,6 +14,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.cinema.booking.model.Account;
 import com.cinema.booking.repository.AccountRepository;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 
 @RestController
 public class AuthController {
@@ -36,7 +36,10 @@ public class AuthController {
 
         try {
             if ("admin@cinemaworld.com".equals(email)) {
-                // Demo override: allow admin login for the special demo account with any password.
+                // Demo override: admin account uses the fixed password "anything"
+                if (!"anything".equals(password)) {
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Invalid credentials"));
+                }
                 Account account = accountRepository.findByEmailIgnoreCase(email)
                         .orElseGet(() -> {
                             Account admin = new Account("Cinema", "Admin", email, "", false, "ADMIN");
