@@ -52,7 +52,9 @@ public class AccountController {
                     "message", "Account created successfully",
                     "accountId", account.getAccountId(),
                     "email", account.getEmail(),
-                    "role", account.getRole()));
+                    "role", account.getRole(),
+                    "status", account.getStatus()
+            ));
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", ex.getMessage()));
         }
@@ -82,6 +84,7 @@ public class AccountController {
                             "firstName",  account.getFirstName(),
                             "lastName",   account.getLastName(),
                             "email",      account.getEmail(),
+                            "status",     account.getStatus(),
                             "promotions", account.getPromotions(),
                             "cards",      cardList
                     ));
