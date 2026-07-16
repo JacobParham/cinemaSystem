@@ -84,4 +84,22 @@ public class SmtpEmailService implements EmailService {
             System.err.println("Warning: failed to send password-reset email: " + ex.getMessage());
         }
     }
+
+    @Override
+    public void sendVerificationEmail(Account account, String token) {
+        String link = "http://localhost:8080/verify?token=" + token;
+        try {
+            MimeMessageHelper helper = createMessage(account.getEmail());
+            helper.setSubject("Verify your Cinema Booking account");
+            helper.setText("Hello " + account.getFirstName() + ",\n\n"
+                    + "Thank you for registering. Please click the link below to verify your account:\n\n"
+                    + link + "\n\n"
+                    + "This link expires in 24 hours.\n\n"
+                    + "Thanks,\n"
+                    + "Cinema Booking Team");
+            mailSender.send(helper.getMimeMessage());
+        } catch (Exception ex) {
+            System.err.println("Warning: failed to send verification email: " + ex.getMessage());
+        }
+    }
 }

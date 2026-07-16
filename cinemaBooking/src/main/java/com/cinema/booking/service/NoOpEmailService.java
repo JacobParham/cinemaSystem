@@ -29,6 +29,11 @@ public class NoOpEmailService implements EmailService {
         lastResetTokens.put(account.getEmail().toLowerCase(), token);
     }
 
+    @Override
+    public void sendVerificationEmail(Account account, String token) {
+        // No-op for tests.
+    }
+
     // Test helper
     public String getLastTokenFor(String email) {
         return lastResetTokens.get(email.toLowerCase());

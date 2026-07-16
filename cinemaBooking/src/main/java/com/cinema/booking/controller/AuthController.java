@@ -16,7 +16,11 @@ import com.cinema.booking.model.Account;
 import com.cinema.booking.repository.AccountRepository;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 
 @RestController
 public class AuthController {
@@ -30,7 +34,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Map<String, Object> payload, HttpServletRequest request) {
+    public ResponseEntity<?> login(@RequestBody Map<String, Object> payload, HttpServletRequest request, HttpServletResponse response) {
         String email = String.valueOf(payload.getOrDefault("email", "")).trim().toLowerCase();
         String password = String.valueOf(payload.getOrDefault("password", ""));
 
@@ -56,12 +60,20 @@ public class AuthController {
 
             UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(email, password);
             Authentication auth = authenticationManager.authenticate(token);
-            SecurityContextHolder.getContext().setAuthentication(auth);
 
-            // Ensure session is created
+            SecurityContext context = SecurityContextHolder.createEmptyContext();
+            context.setAuthentication(auth);
+            SecurityContextHolder.setContext(context);
+            new HttpSessionSecurityContextRepository().saveContext(context, request, response);
+
             HttpSession session = request.getSession(true);
 
             Account account = accountRepository.findByEmailIgnoreCase(email).orElse(null);
+
+            if (account != null && "Inactive".equals(account.getStatus())) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("message", "Account is not verified. Please check your email to verify your account."));
+            }
 
             return ResponseEntity.ok(Map.of(
                     "email", email,

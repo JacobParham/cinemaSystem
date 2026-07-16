@@ -17,14 +17,22 @@ CREATE TABLE IF NOT EXISTS showtimes (
     FOREIGN KEY (movie_id) REFERENCES movies(movie_id)
 );
 
-CREATE TABLE IF NOT EXISTS accounts (
-    account_id INT AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS users (
+    user_id INT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    role VARCHAR(50) NOT NULL DEFAULT 'CUSTOMER'
+);
+
+CREATE TABLE IF NOT EXISTS customers (
+    customer_id INT PRIMARY KEY,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
-    email VARCHAR(255) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
-    promotions BOOLEAN NOT NULL DEFAULT FALSE,
-    role VARCHAR(50) NOT NULL DEFAULT 'CUSTOMER'
+    status VARCHAR(20) NOT NULL DEFAULT 'Inactive',
+    phone VARCHAR(25),
+    address VARCHAR(255),
+    promotions TINYINT(1) NOT NULL DEFAULT 0,
+    FOREIGN KEY (customer_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS bookings (
@@ -45,5 +53,29 @@ CREATE TABLE IF NOT EXISTS payment_cards (
     card_last4 VARCHAR(4) NOT NULL,
     expiration VARCHAR(10) NOT NULL,
     cvv_enc TEXT,
-    FOREIGN KEY (account_id) REFERENCES accounts(account_id)
+    FOREIGN KEY (account_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    account_id INT NOT NULL,
+    token VARCHAR(255) NOT NULL UNIQUE,
+    expires_at DATETIME NOT NULL,
+    FOREIGN KEY (account_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS email_verification_tokens (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    account_id INT NOT NULL,
+    token VARCHAR(255) NOT NULL UNIQUE,
+    expires_at DATETIME NOT NULL,
+    FOREIGN KEY (account_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS favorite_movies (
+    account_id INT NOT NULL,
+    movie_id INT NOT NULL,
+    PRIMARY KEY (account_id, movie_id),
+    FOREIGN KEY (account_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (movie_id) REFERENCES movies(movie_id) ON DELETE CASCADE
 );

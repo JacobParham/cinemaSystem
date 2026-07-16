@@ -47,12 +47,10 @@ public class Account {
     @Column(name = "phone", table = "customers")
     private String phone;
 
-    /*
-     * Your new schema has no promotions column.
-     * Keeping this transient prevents the existing frontend from crashing,
-     * but the value will not be saved in the database.
-     */
-    @Transient
+    @Column(name = "address", table = "customers")
+    private String address;
+
+    @Column(name = "promotions", table = "customers")
     private Boolean promotions = false;
 
     public Account() {
@@ -145,5 +143,13 @@ public class Account {
 
     public void setPhone(String phone) {
         this.phone = phone;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
     }
 }

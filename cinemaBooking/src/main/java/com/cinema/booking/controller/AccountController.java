@@ -15,11 +15,14 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.cinema.booking.model.Account;
+import com.cinema.booking.model.FavoriteMovie;
 import com.cinema.booking.model.PaymentCard;
 import com.cinema.booking.repository.AccountRepository;
+import com.cinema.booking.repository.FavoriteMovieRepository;
 import com.cinema.booking.repository.PaymentCardRepository;
 import com.cinema.booking.service.AccountService;
 
@@ -29,13 +32,16 @@ public class AccountController {
     private final AccountService accountService;
     private final AccountRepository accountRepository;
     private final PaymentCardRepository paymentCardRepository;
+    private final FavoriteMovieRepository favoriteMovieRepository;
 
     public AccountController(AccountService accountService,
                              AccountRepository accountRepository,
-                             PaymentCardRepository paymentCardRepository) {
+                             PaymentCardRepository paymentCardRepository,
+                             FavoriteMovieRepository favoriteMovieRepository) {
         this.accountService = accountService;
         this.accountRepository = accountRepository;
         this.paymentCardRepository = paymentCardRepository;
+        this.favoriteMovieRepository = favoriteMovieRepository;
     }
 
     @PostMapping({"/register", "/accounts/register"})
@@ -62,7 +68,8 @@ public class AccountController {
 
     private String currentUserEmail() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        return auth == null ? null : auth.getName();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) return null;
+        return auth.getName();
     }
 
     @GetMapping("/profile")
@@ -86,6 +93,7 @@ public class AccountController {
                             "email",      account.getEmail(),
                             "status",     account.getStatus(),
                             "promotions", account.getPromotions(),
+                            "address",    account.getAddress() != null ? account.getAddress() : "",
                             "cards",      cardList
                     ));
                 })
@@ -114,7 +122,8 @@ public class AccountController {
             String firstName = String.valueOf(payload.getOrDefault("firstName", "")).trim();
             String lastName = String.valueOf(payload.getOrDefault("lastName", "")).trim();
             Boolean promotions = payload.containsKey("promotions") ? Boolean.parseBoolean(String.valueOf(payload.get("promotions"))) : null;
-            Account updated = accountService.updateProfile(email, firstName, lastName, promotions);
+            String address = payload.containsKey("address") ? String.valueOf(payload.get("address")) : null;
+            Account updated = accountService.updateProfile(email, firstName, lastName, promotions, address);
             return ResponseEntity.ok(Map.of("message", "Profile updated", "email", updated.getEmail(), "firstName", updated.getFirstName(), "lastName", updated.getLastName()));
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", ex.getMessage()));
@@ -195,6 +204,54 @@ public class AccountController {
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", ex.getMessage()));
         }
+    }
+
+    @GetMapping("/verify")
+    public ResponseEntity<?> verifyAccount(@RequestParam("token") String token) {
+        try {
+            accountService.verifyAccount(token);
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .header("Location", "/")
+                    .build();
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", ex.getMessage()));
+        }
+    }
+
+    @GetMapping("/favorites")
+    public ResponseEntity<?> getFavorites() {
+        String email = currentUserEmail();
+        if (email == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Not authenticated"));
+        Account account = accountRepository.findByEmailIgnoreCase(email).orElse(null);
+        if (account == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "Account not found"));
+        List<Integer> movieIds = favoriteMovieRepository.findByAccountId(account.getAccountId())
+                .stream().map(FavoriteMovie::getMovieId).collect(Collectors.toList());
+        return ResponseEntity.ok(Map.of("movieIds", movieIds));
+    }
+
+    @PostMapping("/favorites/{movieId}")
+    public ResponseEntity<?> addFavorite(@PathVariable("movieId") int movieId) {
+        String email = currentUserEmail();
+        if (email == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Not authenticated"));
+        Account account = accountRepository.findByEmailIgnoreCase(email).orElse(null);
+        if (account == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "Account not found"));
+        if (!favoriteMovieRepository.existsByAccountIdAndMovieId(account.getAccountId(), movieId)) {
+            FavoriteMovie fm = new FavoriteMovie();
+            fm.setAccountId(account.getAccountId());
+            fm.setMovieId(movieId);
+            favoriteMovieRepository.save(fm);
+        }
+        return ResponseEntity.ok(Map.of("message", "Added to favorites"));
+    }
+
+    @DeleteMapping("/favorites/{movieId}")
+    public ResponseEntity<?> removeFavorite(@PathVariable("movieId") int movieId) {
+        String email = currentUserEmail();
+        if (email == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Not authenticated"));
+        Account account = accountRepository.findByEmailIgnoreCase(email).orElse(null);
+        if (account == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "Account not found"));
+        favoriteMovieRepository.deleteByAccountIdAndMovieId(account.getAccountId(), movieId);
+        return ResponseEntity.ok(Map.of("message", "Removed from favorites"));
     }
 
     // Development helper: retrieve last token from NoOpEmailService when running with 'test' profile.

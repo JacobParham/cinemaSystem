@@ -350,16 +350,21 @@ function connectFavoriteButtons() {
     });
 }
 
-function toggleFavorite(movieId) {
-    if (favoriteMovieIds.includes(movieId)) {
-        favoriteMovieIds = favoriteMovieIds.filter(function (favoriteId) {
-            return favoriteId !== movieId;
+async function toggleFavorite(movieId) {
+    const removing = favoriteMovieIds.includes(movieId);
+    try {
+        const resp = await fetch("/favorites/" + movieId, {
+            method: removing ? "DELETE" : "POST"
         });
+        if (!resp.ok) return;
+    } catch (e) {
+        return;
+    }
+    if (removing) {
+        favoriteMovieIds = favoriteMovieIds.filter(function (id) { return id !== movieId; });
     } else {
         favoriteMovieIds.push(movieId);
     }
-
-    // Please insert endpoints
     renderMovies();
     renderFavoriteMovies();
 }
@@ -622,6 +627,7 @@ async function loadProfile() {
         document.querySelector("#profileFirstName").value = data.firstName || "";
         document.querySelector("#profileLastName").value = data.lastName || "";
         document.querySelector("#profileEmail").value = data.email || "";
+        profileAddress.value = data.address || "";
         document.querySelector("#registerPromotions") && (document.querySelector("#profilePromotions") || null);
         if (document.querySelector("#profilePromotions")) {
             document.querySelector("#profilePromotions").checked = data.promotions || false;
@@ -631,6 +637,17 @@ async function loadProfile() {
         savedCards = (data.cards || []).map(function (c) {
             return { cardId: c.cardId, label: "Card ending in " + c.last4, last4: c.last4 };
         });
+
+        // Load favorites from backend
+        try {
+            const favResp = await fetch("/favorites");
+            if (favResp.ok) {
+                const favData = await favResp.json();
+                favoriteMovieIds = favData.movieIds || [];
+                renderMovies();
+            }
+        } catch (e) { /* leave favoriteMovieIds as-is */ }
+
         renderPaymentCards();
         renderFavoriteMovies();
     } catch (error) {
@@ -1012,6 +1029,7 @@ async function handleProfileSave(event) {
             body: JSON.stringify({
                 firstName: document.querySelector("#profileFirstName").value.trim(),
                 lastName: document.querySelector("#profileLastName").value.trim(),
+                address: profileAddress.value.trim(),
                 promotions: document.querySelector("#profilePromotions") ?
                     document.querySelector("#profilePromotions").checked : undefined
             })
