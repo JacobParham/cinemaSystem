@@ -9,6 +9,8 @@ import com.cinema.booking.model.PaymentCard;
 import com.cinema.booking.repository.PaymentCardRepository;
 import com.cinema.booking.model.PasswordResetToken;
 import com.cinema.booking.repository.PasswordResetTokenRepository;
+import com.cinema.booking.model.EmailVerificationToken;
+import com.cinema.booking.repository.EmailVerificationTokenRepository;
 
 import java.util.Optional;
 
@@ -23,16 +25,19 @@ public class AccountService {
     private final PaymentCardRepository paymentCardRepository;
     private final CryptoService cryptoService;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final EmailVerificationTokenRepository emailVerificationTokenRepository;
 
     public AccountService(AccountRepository accountRepository, PasswordEncoder passwordEncoder, EmailService emailService,
                           PaymentCardRepository paymentCardRepository, CryptoService cryptoService,
-                          PasswordResetTokenRepository passwordResetTokenRepository) {
+                          PasswordResetTokenRepository passwordResetTokenRepository,
+                          EmailVerificationTokenRepository emailVerificationTokenRepository) {
         this.accountRepository = accountRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
         this.paymentCardRepository = paymentCardRepository;
         this.cryptoService = cryptoService;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
+        this.emailVerificationTokenRepository = emailVerificationTokenRepository;
     }
 
     public Account registerAccount(String firstName, String lastName, String email, String password, boolean promotions) {
@@ -46,8 +51,30 @@ public class AccountService {
         String encodedPassword = passwordEncoder.encode(password);
         Account account = new Account(firstName, lastName, email.toLowerCase(), encodedPassword, promotions, "CUSTOMER");
         Account savedAccount = accountRepository.save(account);
-        emailService.sendRegistrationConfirmation(savedAccount);
+
+        String verificationToken = java.util.UUID.randomUUID().toString().replaceAll("-", "");
+        EmailVerificationToken evt = new EmailVerificationToken();
+        evt.setAccount(savedAccount);
+        evt.setToken(verificationToken);
+        evt.setExpiresAt(java.time.Instant.now().plusSeconds(86400));
+        emailVerificationTokenRepository.save(evt);
+        emailService.sendVerificationEmail(savedAccount, verificationToken);
+
         return savedAccount;
+    }
+
+    public void verifyAccount(String token) {
+        Optional<EmailVerificationToken> opt = emailVerificationTokenRepository.findByToken(token);
+        if (opt.isEmpty()) throw new IllegalArgumentException("Invalid or expired verification link.");
+        EmailVerificationToken evt = opt.get();
+        if (evt.getExpiresAt().isBefore(java.time.Instant.now())) {
+            emailVerificationTokenRepository.delete(evt);
+            throw new IllegalArgumentException("Verification link has expired.");
+        }
+        Account account = evt.getAccount();
+        account.setStatus("Active");
+        accountRepository.save(account);
+        emailVerificationTokenRepository.delete(evt);
     }
 
     public void changePassword(String email, String currentPassword, String newPassword) {
@@ -61,13 +88,14 @@ public class AccountService {
         accountRepository.save(account);
     }
 
-    public Account updateProfile(String email, String firstName, String lastName, Boolean promotions) {
+    public Account updateProfile(String email, String firstName, String lastName, Boolean promotions, String address) {
         Optional<Account> opt = accountRepository.findByEmailIgnoreCase(email);
         if (opt.isEmpty()) throw new IllegalArgumentException("Account not found");
         Account account = opt.get();
         if (firstName != null && !firstName.isBlank()) account.setFirstName(firstName);
         if (lastName != null && !lastName.isBlank()) account.setLastName(lastName);
         if (promotions != null) account.setPromotions(promotions);
+        if (address != null) account.setAddress(address.isBlank() ? null : address.trim());
         Account saved = accountRepository.save(account);
         emailService.sendProfileChangeNotification(saved);
         return saved;
@@ -77,6 +105,9 @@ public class AccountService {
         Optional<Account> opt = accountRepository.findByEmailIgnoreCase(email);
         if (opt.isEmpty()) throw new IllegalArgumentException("Account not found");
         Account account = opt.get();
+        if (paymentCardRepository.findByAccountAccountId(account.getAccountId()).size() >= 3) {
+            throw new IllegalArgumentException("Maximum of 3 payment cards allowed.");
+        }
         PaymentCard card = new PaymentCard();
         card.setAccount(account);
         card.setCardHolder(cardHolder);
