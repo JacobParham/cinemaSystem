@@ -37,12 +37,15 @@ CREATE TABLE IF NOT EXISTS customers (
 
 CREATE TABLE IF NOT EXISTS bookings (
     booking_id INT AUTO_INCREMENT PRIMARY KEY,
+    account_id INT,
     showtime_id INT NOT NULL,
     adult_tickets INT DEFAULT 0,
     child_tickets INT DEFAULT 0,
     senior_tickets INT DEFAULT 0,
+    seat_numbers VARCHAR(255),
     total_price DECIMAL(10,2),
-    FOREIGN KEY (showtime_id) REFERENCES showtimes(showtime_id)
+    FOREIGN KEY (showtime_id) REFERENCES showtimes(showtime_id),
+    FOREIGN KEY (account_id) REFERENCES users(user_id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS payment_cards (

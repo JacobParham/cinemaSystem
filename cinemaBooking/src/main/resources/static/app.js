@@ -50,12 +50,41 @@ async function loadMovies() {
     }
     const data = await response.json();
 
-    movies = data.map(function (movie) {
-        const showtimes = movie.status === "Coming Soon"
-            ? ["Coming Soon"]
-            : ["2:00 PM", "5:00 PM", "8:00 PM"];
-        return { ...movie, showtimes: showtimes };
-    });
+    // Load showtimes for each movie
+    const moviesWithShowtimes = await Promise.all(data.map(async function (movie) {
+        if (movie.status === "Coming Soon") {
+            return { ...movie, showtimes: [{ time: "Coming Soon", showtimeId: null }] };
+        }
+        
+        try {
+            const showtimeResponse = await fetch("/showtimes/movie/" + movie.movieId);
+            if (showtimeResponse.ok) {
+                const showtimes = await showtimeResponse.json();
+                const formattedShowtimes = showtimes.map(function (st) {
+                    const timeStr = formatShowTime(st.showTime);
+                    return { 
+                        time: timeStr || "TBD", 
+                        showtimeId: st.showtimeId 
+                    };
+                });
+                return { ...movie, showtimes: formattedShowtimes };
+            }
+        } catch (error) {
+            console.error("Failed to load showtimes for movie:", movie.movieId, error);
+        }
+        
+        // Fallback to hardcoded times if showtimes fail to load
+        return { 
+            ...movie, 
+            showtimes: [
+                { time: "2:00 PM", showtimeId: null },
+                { time: "5:00 PM", showtimeId: null },
+                { time: "8:00 PM", showtimeId: null }
+            ]
+        };
+    }));
+
+    movies = moviesWithShowtimes;
 }
 
 const homePage = document.querySelector("#homePage");
@@ -127,9 +156,13 @@ const logoutButton = document.querySelector("#logoutButton");
 const roleNavigationItems = document.querySelectorAll("[data-nav-audience]");
 
 let currentMovieTitle = "";
+let currentMovieId = 0;
+let currentShowtimeId = 0;
+let currentSessionId = "";
 let deletingExpirationSlash = false;
 let deletingCardNumberSpace = false;
 let selectedSeats = [];
+let bookedSeats = [];
 let ticketCounts = {
     adult: 0,
     child: 0,
@@ -388,12 +421,14 @@ function showMovieDetails(movieTitle) {
     detailsPoster.alt = selectedMovie.title + " poster";
     currentMovieTitle = selectedMovie.title;
 
-    showtimeButtons.innerHTML = selectedMovie.showtimes.map(function (showtime) {
+    showtimeButtons.innerHTML = selectedMovie.showtimes.map(function (showtimeObj) {
+        const showtime = showtimeObj.time;
+        const showtimeId = showtimeObj.showtimeId;
         const isBookable = isBookableShowtime(showtime);
         const buttonClass = isBookable ? "showtime-button" : "showtime-button showtime-button--disabled";
         const disabledAttr = isBookable ? "" : " disabled";
 
-        return `<button class="${buttonClass}" type="button" data-showtime="${showtime}"${disabledAttr}>${showtime}</button>`;
+        return `<button class="${buttonClass}" type="button" data-showtime="${showtime}" data-showtime-id="${showtimeId}"${disabledAttr}>${showtime}</button>`;
     }).join("");
 
     connectShowtimeButtons(selectedMovie);
@@ -416,12 +451,12 @@ function connectShowtimeButtons(movie) {
                 return;
             }
 
-            showBookingPage(movie.title, button.dataset.showtime);
+            showBookingPage(movie.title, movie.movieId, button.dataset.showtime, button.dataset.showtimeId);
         });
     });
 }
 
-function showBookingPage(movieTitle, showtime) {
+function showBookingPage(movieTitle, movieId, showtime, showtimeId) {
     if (!isPageAllowed("bookingPage")) {
         handleUnauthorizedPage("bookingPage");
         return;
@@ -440,8 +475,15 @@ function showBookingPage(movieTitle, showtime) {
     bookingPoster.src = selectedMovie.posterUrl;
     bookingPoster.alt = movieTitle + " poster";
     currentMovieTitle = movieTitle;
+    currentMovieId = movieId;
+    currentShowtimeId = showtimeId;
+    
+    // Generate a new session ID for this booking session
+    currentSessionId = generateSessionId();
+    
     resetBookingForm();
     createSeatLayout();
+    loadBookedSeats(showtimeId);
 
     homePage.style.display = "none";
     movieDetailsPage.style.display = "none";
@@ -453,6 +495,37 @@ function showBookingPage(movieTitle, showtime) {
     window.scrollTo(0, 0);
 }
 
+function generateSessionId() {
+    return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+}
+
+function formatShowTime(showTime) {
+    if (!showTime) return "";
+    
+    // If it's already a string in the format like "20:00:00", parse it
+    let hours, minutes;
+    
+    if (typeof showTime === 'string') {
+        const parts = showTime.split(':');
+        hours = parseInt(parts[0], 10);
+        minutes = parseInt(parts[1], 10);
+    } else if (showTime.hour !== undefined && showTime.minute !== undefined) {
+        // If it's an object with hour/minute properties
+        hours = showTime.hour;
+        minutes = showTime.minute;
+    } else {
+        return showTime.toString();
+    }
+    
+    // Convert to 12-hour format
+    const period = hours >= 12 ? 'PM' : 'AM';
+    let displayHours = hours % 12;
+    if (displayHours === 0) displayHours = 12;
+    
+    const displayMinutes = minutes.toString().padStart(2, '0');
+    return `${displayHours}:${displayMinutes} ${period}`;
+}
+
 function resetBookingForm() {
     ticketCounts = {
         adult: 0,
@@ -460,8 +533,46 @@ function resetBookingForm() {
         senior: 0
     };
     selectedSeats = [];
+    bookedSeats = [];
     clearBookingFeedback();
     updateBookingSummary();
+}
+
+async function loadBookedSeats(showtimeId) {
+    if (!showtimeId) {
+        bookedSeats = [];
+        return;
+    }
+
+    try {
+        const response = await fetch("/bookings/seats/" + showtimeId);
+        if (!response.ok) {
+            console.error("Failed to load booked seats:", response.status);
+            bookedSeats = [];
+            return;
+        }
+        const data = await response.json();
+        bookedSeats = data.bookedSeats || [];
+        markBookedSeats();
+    } catch (error) {
+        console.error("Error loading booked seats:", error);
+        bookedSeats = [];
+    }
+}
+
+function markBookedSeats() {
+    const seatButtons = document.querySelectorAll(".seat-button");
+    
+    seatButtons.forEach(function (button) {
+        const seatName = button.dataset.seat;
+        if (bookedSeats.includes(seatName)) {
+            button.classList.add("booked-seat");
+            button.disabled = true;
+            button.classList.add("seat-button--disabled");
+        } else {
+            button.classList.remove("booked-seat");
+        }
+    });
 }
 
 function changeTicketCount(ticketType, amount) {
@@ -507,6 +618,12 @@ function toggleSeat(button) {
         return;
     }
 
+    // Prevent selecting already booked seats
+    if (bookedSeats.includes(seatName)) {
+        showBookingFeedback("This seat is already booked.", "error");
+        return;
+    }
+
     if (selectedSeats.includes(seatName)) {
         selectedSeats = selectedSeats.filter(function (seat) {
             return seat !== seatName;
@@ -537,6 +654,42 @@ function updateBookingSummary() {
     selectedSeatsText.textContent = selectedSeats.length > 0 ? selectedSeats.join(", ") : "None";
     ticketTotal.textContent = "$" + total.toFixed(2);
     refreshSeatAvailability();
+    
+    // Lock seats when the user has selected the right number
+    const totalTickets = getTotalTickets();
+    if (selectedSeats.length === totalTickets && totalTickets > 0) {
+        lockSelectedSeats();
+    }
+}
+
+async function lockSelectedSeats() {
+    if (!currentShowtimeId || selectedSeats.length === 0) {
+        return;
+    }
+
+    try {
+        const response = await fetch("/bookings/lock-seats", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                showtimeId: currentShowtimeId,
+                seatNumbers: selectedSeats.join(","),
+                sessionId: currentSessionId
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            showBookingFeedback(errorData.message || "Failed to lock seats", "error");
+            // Refresh booked seats if locking failed
+            loadBookedSeats(currentShowtimeId);
+        }
+    } catch (error) {
+        console.error("Error locking seats:", error);
+        showBookingFeedback("Failed to lock seats. Please try again.", "error");
+    }
 }
 
 function handleCheckout() {

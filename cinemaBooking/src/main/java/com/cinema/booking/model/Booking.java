@@ -21,6 +21,10 @@ public class Booking {
     @Column(name = "booking_id")
     private int bookingId;
 
+    // Nullable — bookings placed by guests won't have an account
+    @Column(name = "account_id")
+    private Integer accountId;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "showtime_id", nullable = false)
     private Showtime showtime;
@@ -34,6 +38,10 @@ public class Booking {
     @Column(name = "senior_tickets")
     private int seniorTickets;
 
+    // Comma-separated seat labels, e.g. "A1,A2,B3"
+    @Column(name = "seat_numbers")
+    private String seatNumbers;
+
     @Column(name = "total_price", precision = 10, scale = 2)
     private BigDecimal totalPrice;
 
@@ -41,6 +49,9 @@ public class Booking {
 
     public int getBookingId() { return bookingId; }
     public void setBookingId(int bookingId) { this.bookingId = bookingId; }
+
+    public Integer getAccountId() { return accountId; }
+    public void setAccountId(Integer accountId) { this.accountId = accountId; }
 
     public Showtime getShowtime() { return showtime; }
     public void setShowtime(Showtime showtime) { this.showtime = showtime; }
@@ -63,6 +74,9 @@ public class Booking {
 
     public int getSeniorTickets() { return seniorTickets; }
     public void setSeniorTickets(int seniorTickets) { this.seniorTickets = seniorTickets; }
+
+    public String getSeatNumbers() { return seatNumbers; }
+    public void setSeatNumbers(String seatNumbers) { this.seatNumbers = seatNumbers; }
 
     public BigDecimal getTotalPrice() { return totalPrice; }
     public void setTotalPrice(BigDecimal totalPrice) { this.totalPrice = totalPrice; }

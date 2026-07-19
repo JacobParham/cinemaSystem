@@ -167,11 +167,11 @@
                 <p id="bookingFeedback" class="booking-feedback" role="status" aria-live="polite"></p>
 
                 <p class="booking-note">
-                    This is a UI prototype only. Checkout and payment will be added in a later sprint.
+                    Select your seats above, then click Proceed to Checkout to review your order.
                 </p>
 
                 <div class="booking-actions">
-                    <button id="checkoutButton" class="checkout-button" type="button">Checkout</button>
+                    <button id="checkoutButton" class="checkout-button" type="button">Proceed to Checkout</button>
                     <button id="backToDetailsButton" class="back-button" type="button">Back to Movie</button>
                     <button id="bookingBackToMoviesButton" class="back-button" type="button">Back to Movies</button>
                 </div>
@@ -345,6 +345,97 @@
                 <button class="form-button" type="submit">Save Profile</button>
                 <p id="profileMessage" class="form-message" role="status" aria-live="polite"></p>
             </form>
+        </section>
+
+        <!-- Order Summary Page -->
+        <section id="orderSummaryPage" class="account-page">
+            <button class="back-button" type="button" id="orderSummaryBackButton">Back to Seat Selection</button>
+            <p class="small-heading">Almost there</p>
+            <h1>Order Summary</h1>
+
+            <div class="booking-card">
+                <div class="booking-top">
+                    <div>
+                        <p>Movie</p>
+                        <h2 id="summaryMovieTitle"></h2>
+                        <p>Showtime</p>
+                        <h2 id="summaryShowtime"></h2>
+                    </div>
+                    <img id="summaryPoster" class="booking-poster" src="" alt="">
+                </div>
+
+                <h2>Ticket Breakdown</h2>
+                <div id="summaryTicketBreakdown" class="ticket-list"></div>
+
+                <div class="booking-summary" style="margin-top: 22px;">
+                    <p>Selected seats: <strong id="summarySeats"></strong></p>
+                    <p>Total before tax: <strong id="summaryTotal"></strong></p>
+                </div>
+
+                <h2 style="margin-top: 26px;">Confirm Email Address</h2>
+                <p class="form-help">We'll send your booking confirmation to this address.</p>
+                <form id="orderEmailForm" class="account-form" style="padding: 0; border: 0; background: transparent; gap: 10px;">
+                    <label for="orderEmail">Email <span style="color: var(--main-orange);">*</span></label>
+                    <input id="orderEmail" name="email" type="email" autocomplete="email" required aria-required="true">
+                    <p id="orderEmailMessage" class="form-message" role="status" aria-live="polite"></p>
+                </form>
+
+                <div class="booking-actions" style="margin-top: 26px;">
+                    <button id="proceedToPaymentButton" class="checkout-button" type="button">Proceed to Payment</button>
+                    <button id="orderSummaryBackToMoviesButton" class="back-button" type="button">Back to Movies</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Payment Page (mockup) -->
+        <section id="paymentPage" class="account-page">
+            <button class="back-button" type="button" id="paymentBackButton">Back to Order Summary</button>
+            <p class="small-heading">Final step</p>
+            <h1>Payment</h1>
+
+            <div class="booking-card">
+                <p class="form-help" style="margin-bottom: 18px;">
+                    Review your order one more time, then submit. Full payment processing will be available in the final sprint.
+                </p>
+
+                <h2>Booking Summary</h2>
+                <div class="booking-summary">
+                    <p>Movie: <strong id="paymentMovieTitle"></strong></p>
+                    <p>Showtime: <strong id="paymentShowtime"></strong></p>
+                    <p>Seats: <strong id="paymentSeats"></strong></p>
+                    <p>Email: <strong id="paymentEmail"></strong></p>
+                    <p>Total before tax: <strong id="paymentTotal"></strong></p>
+                </div>
+
+                <h2 style="margin-top: 26px;">Payment Details</h2>
+                <div class="account-form" style="padding: 18px; gap: 12px;">
+                    <p class="form-help" style="grid-column: 1/-1;">Payment processing is a mockup. No real charge will occur.</p>
+
+                    <label for="paymentCardName">Name on card</label>
+                    <input id="paymentCardName" type="text" autocomplete="cc-name" placeholder="Jane Smith" disabled>
+
+                    <label for="paymentCardNumber">Card number</label>
+                    <input id="paymentCardNumber" type="text" inputmode="numeric" autocomplete="cc-number" placeholder="•••• •••• •••• ••••" disabled>
+
+                    <div class="card-field-row">
+                        <div>
+                            <label for="paymentCardExpiry">Expiration</label>
+                            <input id="paymentCardExpiry" type="text" autocomplete="cc-exp" placeholder="MM/YY" disabled>
+                        </div>
+                        <div>
+                            <label for="paymentCardCvv">CVV</label>
+                            <input id="paymentCardCvv" type="text" inputmode="numeric" autocomplete="cc-csc" placeholder="•••" disabled>
+                        </div>
+                    </div>
+                </div>
+
+                <p id="paymentMessage" class="form-message" role="status" aria-live="polite" style="margin-top: 14px;"></p>
+
+                <div class="booking-actions" style="margin-top: 26px;">
+                    <button id="submitPaymentButton" class="checkout-button" type="button">Place Order</button>
+                    <button id="paymentBackToMoviesButton" class="back-button" type="button">Back to Movies</button>
+                </div>
+            </div>
         </section>
 
         <section id="adminPage" class="account-page">
