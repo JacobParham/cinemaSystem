@@ -47,7 +47,7 @@
 
                 <label for="dateFilter">Filter by show date</label>
                 <select id="dateFilter" disabled>
-                    <option>Coming in next sprint</option>
+                    <option>All show dates</option>
                 </select>
             </section>
 
@@ -109,7 +109,7 @@
         </section>
 
         <section id="bookingPage" class="booking-page">
-            <p class="small-heading">Booking Prototype</p>
+            <p class="small-heading">Book Tickets</p>
             <h1>Review Your Showtime</h1>
 
             <div class="booking-card">
@@ -157,6 +157,11 @@
 
                 <h2>Choose Seats</h2>
                 <div class="screen-label">Screen</div>
+                <div class="seat-legend" aria-label="Seat legend">
+                    <span><span class="seat-legend-swatch seat-legend-swatch--available"></span>Available</span>
+                    <span><span class="seat-legend-swatch seat-legend-swatch--selected"></span>Selected</span>
+                    <span><span class="seat-legend-swatch seat-legend-swatch--unavailable"></span>Unavailable</span>
+                </div>
                 <div id="seatLayout" class="seat-layout" aria-label="Seating layout"></div>
 
                 <div class="booking-summary">
@@ -350,7 +355,6 @@
         <!-- Order Summary Page -->
         <section id="orderSummaryPage" class="account-page">
             <button class="back-button" type="button" id="orderSummaryBackButton">Back to Seat Selection</button>
-            <p class="small-heading">Almost there</p>
             <h1>Order Summary</h1>
 
             <div class="booking-card">
@@ -395,7 +399,7 @@
 
             <div class="booking-card">
                 <p class="form-help" style="margin-bottom: 18px;">
-                    Review your order one more time, then submit. Full payment processing will be available in the final sprint.
+                    Review your order one more time, then submit.
                 </p>
 
                 <h2>Booking Summary</h2>
@@ -440,20 +444,157 @@
 
         <section id="adminPage" class="account-page">
             <button class="back-button" type="button" data-page="homePage">Back to Movies</button>
-            <p class="small-heading">Admin Prototype</p>
+            <p class="small-heading">Admin Portal</p>
             <h1>Admin Dashboard</h1>
-            <p class="admin-intro">Sprint 2 prototype tools. Full management screens will be connected by the admin feature team.</p>
+            <p class="admin-intro">Use these tools to manage movie listings and prepare showtime scheduling.</p>
 
             <div class="admin-menu">
-                <!-- TODO(teammate): Implement the full Manage Movies admin page and endpoints. -->
-                <button type="button" disabled title="Coming in a teammate's admin implementation">Manage Movies <span>Coming soon</span></button>
-                <!-- TODO(teammate): Implement the full Promotions admin page and endpoints. -->
-                <button type="button" disabled title="Coming in a teammate's admin implementation">Promotions <span>Coming soon</span></button>
-                <!-- TODO(teammate): Implement the full Users admin page and endpoints. -->
-                <button type="button" disabled title="Coming in a teammate's admin implementation">Users <span>Coming soon</span></button>
-                <!-- TODO(teammate): Implement the full Showtimes admin page and endpoints. -->
-                <button type="button" disabled title="Coming in a teammate's admin implementation">Showtimes <span>Coming soon</span></button>
+                <button type="button" data-admin-section="adminMoviesPanel">Manage Movies <span>Add a movie</span></button>
+                <button type="button" data-admin-section="adminPromotionsPanel">Manage Promotions <span>Manage running promotions</span></button>
+                <button type="button" data-admin-section="adminUsersPanel">Manage Users <span>Review user accounts</span></button>
+                <button type="button" data-admin-section="adminShowtimesPanel">Manage Showtimes <span>Manage current showtimes</span></button>
             </div>
+
+            <section id="adminMoviesPanel" class="admin-panel">
+                <h2>Add Movie</h2>
+                <form id="adminMovieForm" class="account-form">
+                    <p class="form-help"><span>*</span> Required fields</p>
+
+                    <label for="adminMovieTitle">Title <span>*</span></label>
+                    <input id="adminMovieTitle" name="title" type="text" required aria-required="true">
+
+                    <label for="adminMovieGenre">Category / Genre <span>*</span></label>
+                    <input id="adminMovieGenre" name="genre" type="text" required aria-required="true">
+
+                    <label for="adminMovieRating">MPAA Rating</label>
+                    <select id="adminMovieRating" name="rating">
+                        <option value="">Select rating</option>
+                        <option value="G">G</option>
+                        <option value="PG">PG</option>
+                        <option value="PG-13">PG-13</option>
+                        <option value="R">R</option>
+                        <option value="NC-17">NC-17</option>
+                    </select>
+
+                    <label for="adminMovieStatus">Status <span>*</span></label>
+                    <select id="adminMovieStatus" name="status" required aria-required="true">
+                        <option value="">Select status</option>
+                        <option value="Currently Running">Currently Running</option>
+                        <option value="Coming Soon">Coming Soon</option>
+                    </select>
+
+                    <label for="adminMovieDescription">Synopsis</label>
+                    <textarea id="adminMovieDescription" name="description" rows="4"></textarea>
+
+                    <label for="adminMoviePoster">Poster URL</label>
+                    <input id="adminMoviePoster" name="posterUrl" type="url" placeholder="https://...">
+
+                    <label for="adminMovieTrailer">Trailer embed URL</label>
+                    <input id="adminMovieTrailer" name="trailerUrl" type="url" placeholder="https://www.youtube.com/embed/...">
+
+                    <button class="form-button" type="submit">Add Movie</button>
+                    <p id="adminMovieMessage" class="form-message" role="status" aria-live="polite"></p>
+                </form>
+            </section>
+
+            <section id="adminPromotionsPanel" class="admin-panel" hidden>
+                <h2>Manage Promotions</h2>
+                <form id="adminPromotionForm" class="account-form">
+                    <p class="form-help"><span>*</span> Required fields</p>
+
+                    <label for="adminPromotionCode">Promotion code <span>*</span></label>
+                    <input id="adminPromotionCode" name="code" type="text" required aria-required="true" placeholder="PROMO10">
+
+                    <label for="adminPromotionName">Promotion name <span>*</span></label>
+                    <input id="adminPromotionName" name="name" type="text" required aria-required="true" placeholder="Promotion name">
+
+                    <label for="adminPromotionDiscount">Discount percent <span>*</span></label>
+                    <input id="adminPromotionDiscount" name="discountPercent" type="number" min="1" max="100" required aria-required="true" placeholder="10">
+
+                    <label for="adminPromotionStartDate">Start date <span>*</span></label>
+                    <input id="adminPromotionStartDate" name="startDate" type="date" required aria-required="true">
+
+                    <label for="adminPromotionEndDate">End date <span>*</span></label>
+                    <input id="adminPromotionEndDate" name="endDate" type="date" required aria-required="true">
+
+                    <label for="adminPromotionDescription">Description</label>
+                    <textarea id="adminPromotionDescription" name="description" rows="3" placeholder="Optional promotion details"></textarea>
+
+                    <label class="checkbox-row">
+                        <input id="adminPromotionSendEmail" name="sendEmail" type="checkbox">
+                        Send email to subscribed users
+                    </label>
+
+                    <button class="form-button" type="submit">Add Promotion</button>
+                    <p id="adminPromotionMessage" class="form-message" role="status" aria-live="polite"></p>
+                </form>
+
+                <div class="admin-preview">
+                    <h3>Promotion Preview</h3>
+                    <div id="adminPromotionList" class="simple-list"></div>
+                </div>
+            </section>
+
+            <section id="adminUsersPanel" class="admin-panel" hidden>
+                <h2>Manage Users</h2>
+                <div class="admin-preview">
+                    <h3>User Account Overview</h3>
+                    <div class="simple-list">
+                        <div class="simple-list-row">
+                            <span>
+                                Customer accounts
+                                <span class="admin-showtime-meta">View registered users and account status when the users endpoint is available.</span>
+                            </span>
+                        </div>
+                        <div class="simple-list-row">
+                            <span>
+                                Administrator accounts
+                                <span class="admin-showtime-meta">Add or update admin users after role-management support is connected.</span>
+                            </span>
+                        </div>
+                        <div class="simple-list-row">
+                            <span>
+                                Suspended accounts
+                                <span class="admin-showtime-meta">Suspend or reactivate users when account controls are available.</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="adminShowtimesPanel" class="admin-panel" hidden>
+                <h2>Manage Showtimes</h2>
+                <form id="adminShowtimeForm" class="account-form">
+                    <p class="form-help"><span>*</span> Required fields</p>
+
+                    <label for="adminShowtimeMovie">Movie <span>*</span></label>
+                    <select id="adminShowtimeMovie" name="movieId" required aria-required="true">
+                        <option value="">Select movie</option>
+                    </select>
+
+                    <label for="adminShowtimeDate">Show date <span>*</span></label>
+                    <input id="adminShowtimeDate" name="showDate" type="date" required aria-required="true">
+
+                    <label for="adminShowtimeTime">Show time <span>*</span></label>
+                    <input id="adminShowtimeTime" name="showTime" type="time" required aria-required="true">
+
+                    <label for="adminShowtimeRoom">Showroom <span>*</span></label>
+                    <select id="adminShowtimeRoom" name="showroom" required aria-required="true">
+                        <option value="">Select showroom</option>
+                        <option value="Showroom 1">Showroom 1</option>
+                        <option value="Showroom 2">Showroom 2</option>
+                        <option value="Showroom 3">Showroom 3</option>
+                    </select>
+
+                    <button class="form-button" type="submit">Add Showtime</button>
+                    <p id="adminShowtimeMessage" class="form-message" role="status" aria-live="polite"></p>
+                </form>
+
+                <div class="admin-preview">
+                    <h3>Current Showtimes</h3>
+                    <div id="adminShowtimeList" class="simple-list"></div>
+                </div>
+            </section>
         </section>
     </main>
 

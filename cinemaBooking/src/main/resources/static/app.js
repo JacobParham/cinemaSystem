@@ -62,8 +62,11 @@ async function loadMovies() {
                 const showtimes = await showtimeResponse.json();
                 const formattedShowtimes = showtimes.map(function (st) {
                     const timeStr = formatShowTime(st.showTime);
+                    const dateStr = formatShowDate(st.showDate);
                     return { 
-                        time: timeStr || "TBD", 
+                        time: formatShowtimeLabel(dateStr, timeStr),
+                        showDate: st.showDate,
+                        showTime: st.showTime,
                         showtimeId: st.showtimeId 
                     };
                 });
@@ -118,6 +121,27 @@ const bookingFeedback = document.querySelector("#bookingFeedback");
 const checkoutButton = document.querySelector("#checkoutButton");
 const backToDetailsButton = document.querySelector("#backToDetailsButton");
 const bookingBackToMoviesButton = document.querySelector("#bookingBackToMoviesButton");
+const orderSummaryBackButton = document.querySelector("#orderSummaryBackButton");
+const summaryMovieTitle = document.querySelector("#summaryMovieTitle");
+const summaryShowtime = document.querySelector("#summaryShowtime");
+const summaryPoster = document.querySelector("#summaryPoster");
+const summaryTicketBreakdown = document.querySelector("#summaryTicketBreakdown");
+const summarySeats = document.querySelector("#summarySeats");
+const summaryTotal = document.querySelector("#summaryTotal");
+const orderEmailForm = document.querySelector("#orderEmailForm");
+const orderEmail = document.querySelector("#orderEmail");
+const orderEmailMessage = document.querySelector("#orderEmailMessage");
+const proceedToPaymentButton = document.querySelector("#proceedToPaymentButton");
+const orderSummaryBackToMoviesButton = document.querySelector("#orderSummaryBackToMoviesButton");
+const paymentBackButton = document.querySelector("#paymentBackButton");
+const paymentMovieTitle = document.querySelector("#paymentMovieTitle");
+const paymentShowtime = document.querySelector("#paymentShowtime");
+const paymentSeats = document.querySelector("#paymentSeats");
+const paymentEmail = document.querySelector("#paymentEmail");
+const paymentTotal = document.querySelector("#paymentTotal");
+const paymentMessage = document.querySelector("#paymentMessage");
+const submitPaymentButton = document.querySelector("#submitPaymentButton");
+const paymentBackToMoviesButton = document.querySelector("#paymentBackToMoviesButton");
 const loginForm = document.querySelector("#loginForm");
 const registerForm = document.querySelector("#registerForm");
 const forgotPasswordForm = document.querySelector("#forgotPasswordForm");
@@ -154,6 +178,17 @@ const profileAddress = document.querySelector("#profileAddress");
 const addressSuggestions = document.querySelector("#addressSuggestions");
 const logoutButton = document.querySelector("#logoutButton");
 const roleNavigationItems = document.querySelectorAll("[data-nav-audience]");
+const adminSectionButtons = document.querySelectorAll("[data-admin-section]");
+const adminPanels = document.querySelectorAll(".admin-panel");
+const adminMovieForm = document.querySelector("#adminMovieForm");
+const adminMovieMessage = document.querySelector("#adminMovieMessage");
+const adminPromotionForm = document.querySelector("#adminPromotionForm");
+const adminPromotionMessage = document.querySelector("#adminPromotionMessage");
+const adminPromotionList = document.querySelector("#adminPromotionList");
+const adminShowtimeForm = document.querySelector("#adminShowtimeForm");
+const adminShowtimeMovie = document.querySelector("#adminShowtimeMovie");
+const adminShowtimeMessage = document.querySelector("#adminShowtimeMessage");
+const adminShowtimeList = document.querySelector("#adminShowtimeList");
 
 let currentMovieTitle = "";
 let currentMovieId = 0;
@@ -163,6 +198,8 @@ let deletingExpirationSlash = false;
 let deletingCardNumberSpace = false;
 let selectedSeats = [];
 let bookedSeats = [];
+let pendingCheckoutAfterLogin = false;
+let promotionDrafts = [];
 let ticketCounts = {
     adult: 0,
     child: 0,
@@ -181,6 +218,16 @@ function isBookableShowtime(showtime) {
 
 function getTotalTickets() {
     return ticketCounts.adult + ticketCounts.child + ticketCounts.senior;
+}
+
+function getTicketTotal() {
+    return ticketCounts.adult * ticketPrices.adult +
+        ticketCounts.child * ticketPrices.child +
+        ticketCounts.senior * ticketPrices.senior;
+}
+
+function formatMoney(amount) {
+    return "$" + amount.toFixed(2);
 }
 
 function clearBookingFeedback() {
@@ -421,7 +468,10 @@ function showMovieDetails(movieTitle) {
     detailsPoster.alt = selectedMovie.title + " poster";
     currentMovieTitle = selectedMovie.title;
 
-    showtimeButtons.innerHTML = selectedMovie.showtimes.map(function (showtimeObj) {
+    if (!selectedMovie.showtimes || selectedMovie.showtimes.length === 0) {
+        showtimeButtons.innerHTML = '<p class="showtime-empty">No showtimes scheduled yet.</p>';
+    } else {
+        showtimeButtons.innerHTML = selectedMovie.showtimes.map(function (showtimeObj) {
         const showtime = showtimeObj.time;
         const showtimeId = showtimeObj.showtimeId;
         const isBookable = isBookableShowtime(showtime);
@@ -429,7 +479,8 @@ function showMovieDetails(movieTitle) {
         const disabledAttr = isBookable ? "" : " disabled";
 
         return `<button class="${buttonClass}" type="button" data-showtime="${showtime}" data-showtime-id="${showtimeId}"${disabledAttr}>${showtime}</button>`;
-    }).join("");
+        }).join("");
+    }
 
     connectShowtimeButtons(selectedMovie);
 
@@ -457,11 +508,6 @@ function connectShowtimeButtons(movie) {
 }
 
 function showBookingPage(movieTitle, movieId, showtime, showtimeId) {
-    if (!isPageAllowed("bookingPage")) {
-        handleUnauthorizedPage("bookingPage");
-        return;
-    }
-
     const selectedMovie = movies.find(function (movie) {
         return movie.title === movieTitle;
     });
@@ -499,6 +545,23 @@ function generateSessionId() {
     return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 }
 
+function formatShowDate(showDate) {
+    if (!showDate) {
+        return "";
+    }
+
+    const parts = String(showDate).split("-");
+    if (parts.length !== 3) {
+        return String(showDate);
+    }
+
+    const date = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric"
+    });
+}
+
 function formatShowTime(showTime) {
     if (!showTime) return "";
     
@@ -524,6 +587,14 @@ function formatShowTime(showTime) {
     
     const displayMinutes = minutes.toString().padStart(2, '0');
     return `${displayHours}:${displayMinutes} ${period}`;
+}
+
+function formatShowtimeLabel(showDate, showTime) {
+    if (showDate && showTime) {
+        return showDate + ", " + showTime;
+    }
+
+    return showTime || showDate || "TBD";
 }
 
 function resetBookingForm() {
@@ -646,20 +717,11 @@ function updateBookingSummary() {
     childTickets.textContent = ticketCounts.child;
     seniorTickets.textContent = ticketCounts.senior;
 
-    const total =
-        ticketCounts.adult * ticketPrices.adult +
-        ticketCounts.child * ticketPrices.child +
-        ticketCounts.senior * ticketPrices.senior;
+    const total = getTicketTotal();
 
     selectedSeatsText.textContent = selectedSeats.length > 0 ? selectedSeats.join(", ") : "None";
-    ticketTotal.textContent = "$" + total.toFixed(2);
+    ticketTotal.textContent = formatMoney(total);
     refreshSeatAvailability();
-    
-    // Lock seats when the user has selected the right number
-    const totalTickets = getTotalTickets();
-    if (selectedSeats.length === totalTickets && totalTickets > 0) {
-        lockSelectedSeats();
-    }
 }
 
 async function lockSelectedSeats() {
@@ -705,8 +767,81 @@ function handleCheckout() {
         return;
     }
 
-    showBookingFeedback(
-        "Prototype only: your selection is ready, but booking is not saved yet. Payment comes in a later sprint.",
+    if (!currentUser) {
+        pendingCheckoutAfterLogin = true;
+        showPage("loginPage");
+        setFormMessage(loginMessage, "Please log in to continue checkout.", "error");
+        return;
+    }
+
+    showOrderSummary();
+}
+
+function showOrderSummary() {
+    const selectedMovie = movies.find(function (movie) {
+        return movie.movieId === Number(currentMovieId) || movie.title === currentMovieTitle;
+    });
+
+    summaryMovieTitle.textContent = currentMovieTitle;
+    summaryShowtime.textContent = bookingShowtime.textContent;
+    summarySeats.textContent = selectedSeats.join(", ");
+    summaryTotal.textContent = formatMoney(getTicketTotal());
+    orderEmail.value = currentUser ? currentUser.email : "";
+    setFormMessage(orderEmailMessage, "", "success");
+
+    if (selectedMovie) {
+        summaryPoster.src = selectedMovie.posterUrl;
+        summaryPoster.alt = selectedMovie.title + " poster";
+    }
+
+    summaryTicketBreakdown.innerHTML = ["adult", "child", "senior"].map(function (ticketType) {
+        const count = ticketCounts[ticketType];
+        const label = ticketType.charAt(0).toUpperCase() + ticketType.slice(1);
+        const price = ticketPrices[ticketType];
+        const lineTotal = count * price;
+
+        return `
+            <div class="ticket-row">
+                <span>${label} tickets: ${count}</span>
+                <span>${formatMoney(price)} each | ${formatMoney(lineTotal)}</span>
+            </div>
+        `;
+    }).join("");
+
+    showPage("orderSummaryPage");
+}
+
+function handleProceedToPayment() {
+    if (!orderEmail.value.trim()) {
+        setFormMessage(orderEmailMessage, "Please enter an email address.", "error");
+        orderEmail.focus();
+        return;
+    }
+
+    if (!orderEmailForm.checkValidity()) {
+        setFormMessage(orderEmailMessage, "Please enter a valid email address.", "error");
+        orderEmailForm.reportValidity();
+        return;
+    }
+
+    showPaymentPage();
+}
+
+function showPaymentPage() {
+    paymentMovieTitle.textContent = currentMovieTitle;
+    paymentShowtime.textContent = bookingShowtime.textContent;
+    paymentSeats.textContent = selectedSeats.join(", ");
+    paymentEmail.textContent = orderEmail.value.trim();
+    paymentTotal.textContent = formatMoney(getTicketTotal());
+    setFormMessage(paymentMessage, "", "success");
+
+    showPage("paymentPage");
+}
+
+function handleSubmitPayment() {
+    setFormMessage(
+        paymentMessage,
+        "Payment details received for review. No real charge was made.",
         "success"
     );
 }
@@ -723,6 +858,17 @@ function showHomePage() {
         page.style.display = "none";
     });
     homePage.style.display = "block";
+    window.scrollTo(0, 0);
+}
+
+function showActiveBookingPage() {
+    detailsTrailer.src = "";
+    homePage.style.display = "none";
+    movieDetailsPage.style.display = "none";
+    bookingPage.style.display = "block";
+    accountPages.forEach(function (page) {
+        page.style.display = "none";
+    });
     window.scrollTo(0, 0);
 }
 
@@ -756,6 +902,10 @@ function showPage(pageId) {
 
     if (pageId === "profilePage") {
         loadProfile();
+    }
+
+    if (pageId === "adminPage") {
+        showAdminSection("adminMoviesPanel");
     }
 
     if (pageId === "resetPasswordPage") {
@@ -881,6 +1031,200 @@ function renderAddressSuggestions() {
     addressSuggestions.innerHTML = matches.map(function (address) {
         return `<option value="${address}"></option>`;
     }).join("");
+}
+
+function showAdminSection(panelId) {
+    adminPanels.forEach(function (panel) {
+        panel.hidden = panel.id !== panelId;
+    });
+
+    adminSectionButtons.forEach(function (button) {
+        button.classList.toggle("admin-menu-active", button.dataset.adminSection === panelId);
+    });
+
+    if (panelId === "adminShowtimesPanel") {
+        renderAdminShowtimeTools();
+    }
+
+    if (panelId === "adminPromotionsPanel") {
+        renderAdminPromotionList();
+    }
+}
+
+function renderAdminPromotionList() {
+    if (promotionDrafts.length === 0) {
+        adminPromotionList.innerHTML = "<p>No promotions added in this session.</p>";
+        return;
+    }
+
+    adminPromotionList.innerHTML = promotionDrafts.map(function (promotion) {
+        const emailLabel = promotion.sendEmail ? "Email subscribed users" : "No email";
+
+        return `
+            <div class="simple-list-row">
+                <span>
+                    ${promotion.code} - ${promotion.name}
+                    <span class="admin-showtime-meta">${promotion.discountPercent}% off | ${promotion.startDate} to ${promotion.endDate} | ${emailLabel}</span>
+                </span>
+            </div>
+        `;
+    }).join("");
+}
+
+function getPromotionValidationError() {
+    const discount = Number(adminPromotionForm.discountPercent.value);
+    const startDate = adminPromotionForm.startDate.value;
+    const endDate = adminPromotionForm.endDate.value;
+
+    if (discount < 1 || discount > 100) {
+        return "Discount percent must be between 1 and 100.";
+    }
+
+    if (startDate && endDate && endDate < startDate) {
+        return "End date must be on or after the start date.";
+    }
+
+    return "";
+}
+
+async function handleAdminPromotionSubmit(event) {
+    event.preventDefault();
+
+    if (!validateRequiredFields(adminPromotionForm, adminPromotionMessage)) {
+        return;
+    }
+
+    const validationError = getPromotionValidationError();
+    if (validationError) {
+        setFormMessage(adminPromotionMessage, validationError, "error");
+        return;
+    }
+
+    const payload = {
+        code: adminPromotionForm.code.value.trim().toUpperCase(),
+        name: adminPromotionForm.name.value.trim(),
+        discountPercent: Number(adminPromotionForm.discountPercent.value),
+        startDate: adminPromotionForm.startDate.value,
+        endDate: adminPromotionForm.endDate.value,
+        description: adminPromotionForm.description.value.trim(),
+        sendEmail: adminPromotionForm.sendEmail.checked
+    };
+
+    // Add endpoint here
+    promotionDrafts.unshift(payload);
+    renderAdminPromotionList();
+    adminPromotionForm.reset();
+    setFormMessage(
+        adminPromotionMessage,
+        "Promotion UI is ready. Backend needs an endpoint to save promotions and email subscribed users.",
+        "success"
+    );
+    console.log("Promotion payload ready for endpoint:", payload);
+}
+
+function renderAdminShowtimeTools() {
+    const selectedMovieId = adminShowtimeMovie.value;
+
+    adminShowtimeMovie.innerHTML = '<option value="">Select movie</option>' + movies.map(function (movie) {
+        return `<option value="${movie.movieId}">${movie.title}</option>`;
+    }).join("");
+
+    adminShowtimeMovie.value = selectedMovieId;
+    renderAdminShowtimeList();
+}
+
+function renderAdminShowtimeList() {
+    const showtimeRows = [];
+    const selectedMovieId = Number(adminShowtimeMovie.value);
+
+    movies.forEach(function (movie) {
+        if (selectedMovieId && movie.movieId !== selectedMovieId) {
+            return;
+        }
+
+        (movie.showtimes || []).forEach(function (showtime) {
+            if (!showtime.showtimeId) {
+                return;
+            }
+
+            showtimeRows.push(`
+                <div class="simple-list-row">
+                    <span>
+                        ${movie.title}
+                        <span class="admin-showtime-meta">${showtime.time}</span>
+                    </span>
+                </div>
+            `);
+        });
+    });
+
+    adminShowtimeList.innerHTML = showtimeRows.length > 0
+        ? showtimeRows.join("")
+        : "<p>No showtimes loaded.</p>";
+}
+
+async function handleAdminMovieSubmit(event) {
+    event.preventDefault();
+
+    if (!validateRequiredFields(adminMovieForm, adminMovieMessage)) {
+        return;
+    }
+
+    try {
+        const response = await fetch("/movies", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                title: adminMovieForm.title.value.trim(),
+                genre: adminMovieForm.genre.value.trim(),
+                rating: adminMovieForm.rating.value.trim(),
+                status: adminMovieForm.status.value,
+                description: adminMovieForm.description.value.trim(),
+                posterUrl: adminMovieForm.posterUrl.value.trim(),
+                trailerUrl: adminMovieForm.trailerUrl.value.trim()
+            })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            setFormMessage(adminMovieMessage, data.message || "Could not add movie.", "error");
+            return;
+        }
+
+        setFormMessage(adminMovieMessage, "Movie added successfully.", "success");
+        adminMovieForm.reset();
+
+        await loadMovies();
+        genreFilter.innerHTML = '<option value="All">All genres</option>';
+        loadGenres();
+        renderMovies();
+        renderAdminShowtimeTools();
+    } catch (error) {
+        setFormMessage(adminMovieMessage, "Could not add movie. Please try again.", "error");
+    }
+}
+
+async function handleAdminShowtimeSubmit(event) {
+    event.preventDefault();
+
+    if (!validateRequiredFields(adminShowtimeForm, adminShowtimeMessage)) {
+        return;
+    }
+
+    const payload = {
+        movieId: Number(adminShowtimeForm.movieId.value),
+        showDate: adminShowtimeForm.showDate.value,
+        showTime: adminShowtimeForm.showTime.value,
+        showroom: adminShowtimeForm.showroom.value
+    };
+
+    // Add endpoint here
+    setFormMessage(
+        adminShowtimeMessage,
+        "Showtime form is ready. Backend needs POST /showtimes with movieId, showDate, showTime, and showroom.",
+        "error"
+    );
+    console.log("Showtime payload ready for endpoint:", payload);
 }
 
 function addDemoCard() {
@@ -1055,7 +1399,12 @@ async function handleLogin(event) {
         loginForm.reset();
 
         if (data.role === "ADMIN") {
+            pendingCheckoutAfterLogin = false;
             showPage("adminPage");
+        } else if (pendingCheckoutAfterLogin) {
+            pendingCheckoutAfterLogin = false;
+            showActiveBookingPage();
+            handleCheckout();
         } else {
             showHomePage();
         }
@@ -1278,6 +1627,12 @@ backToMoviesButton.addEventListener("click", showHomePage);
 backToDetailsButton.addEventListener("click", returnToCurrentMovie);
 bookingBackToMoviesButton.addEventListener("click", showHomePage);
 checkoutButton.addEventListener("click", handleCheckout);
+orderSummaryBackButton.addEventListener("click", showActiveBookingPage);
+orderSummaryBackToMoviesButton.addEventListener("click", showHomePage);
+proceedToPaymentButton.addEventListener("click", handleProceedToPayment);
+paymentBackButton.addEventListener("click", showOrderSummary);
+paymentBackToMoviesButton.addEventListener("click", showHomePage);
+submitPaymentButton.addEventListener("click", handleSubmitPayment);
 addCardButton.addEventListener("click", addDemoCard);
 saveCardButton.addEventListener("click", saveCard);
 cancelCardButton.addEventListener("click", hideCardFields);
@@ -1294,6 +1649,16 @@ forgotPasswordForm.addEventListener("submit", handleForgotPassword);
 resetPasswordForm.addEventListener("submit", handleResetPassword);
 profileForm.addEventListener("submit", handleProfileSave);
 logoutButton.addEventListener("click", handleLogout);
+adminMovieForm.addEventListener("submit", handleAdminMovieSubmit);
+adminPromotionForm.addEventListener("submit", handleAdminPromotionSubmit);
+adminShowtimeForm.addEventListener("submit", handleAdminShowtimeSubmit);
+adminShowtimeMovie.addEventListener("change", renderAdminShowtimeList);
+
+adminSectionButtons.forEach(function (button) {
+    button.addEventListener("click", function () {
+        showAdminSection(button.dataset.adminSection);
+    });
+});
 
 document.querySelectorAll("[data-page]").forEach(function (button) {
     button.addEventListener("click", function (event) {
