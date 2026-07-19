@@ -63,4 +63,27 @@ public class MovieService {
         }
         return movieRepository.findAll();
     }
+
+    public Movie createMovie(String title, String genre, String rating, String description, String posterUrl, String trailerUrl, String status) {
+        if (title == null || title.trim().isBlank()) {
+            throw new IllegalArgumentException("Title is required");
+        }
+        if (genre == null || genre.trim().isBlank()) {
+            throw new IllegalArgumentException("Genre is required");
+        }
+        if (status == null || status.trim().isBlank()) {
+            throw new IllegalArgumentException("Status is required");
+        }
+
+        Movie movie = new Movie();
+        movie.setTitle(title.trim());
+        movie.setGenre(genre.trim());
+        movie.setRating(rating != null ? rating.trim() : null);
+        movie.setDescription(description != null ? description.trim() : null);
+        movie.setPosterUrl(posterUrl != null ? posterUrl.trim() : null);
+        movie.setTrailerUrl(trailerUrl != null ? trailerUrl.trim() : null);
+        movie.setStatus(status.trim());
+
+        return movieRepository.save(movie);
+    }
 }
