@@ -230,6 +230,7 @@ public class ShowtimeController {
             String movieTitle,
             int showroomId,
             String showroomName,
+            int showroomSeatCount,
             LocalDate showDate,
             LocalTime showTime
     ) {
@@ -240,6 +241,7 @@ public class ShowtimeController {
                     showtime.getMovie().getTitle(),
                     showtime.getShowroom().getShowroomId(),
                     showtime.getShowroom().getShowroomName(),
+                    showtime.getShowroom().getSeatCount(),
                     showtime.getShowDate(),
                     showtime.getShowTime()
             );

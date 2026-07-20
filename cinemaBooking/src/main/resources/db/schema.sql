@@ -9,23 +9,6 @@ CREATE TABLE IF NOT EXISTS movies (
     status ENUM('Currently Running', 'Coming Soon') NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS showtimes (
-    showtime_id INT AUTO_INCREMENT PRIMARY KEY,
-
-    movie_id INT NOT NULL,
-    showroom_id INT NOT NULL,
-
-    show_date DATE NOT NULL,
-    show_time TIME NOT NULL,
-
-    FOREIGN KEY (movie_id) REFERENCES movies(movie_id),
-
-    FOREIGN KEY (showroom_id) REFERENCES showrooms(showroom_id),
-
-    CONSTRAINT uq_showroom_date_time
-        UNIQUE (showroom_id, show_date, show_time)
-);
-
 CREATE TABLE IF NOT EXISTS users (
     user_id INT AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
@@ -42,6 +25,37 @@ CREATE TABLE IF NOT EXISTS customers (
     address VARCHAR(255),
     promotions TINYINT(1) NOT NULL DEFAULT 0,
     FOREIGN KEY (customer_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS showrooms (
+    showroom_id INT AUTO_INCREMENT PRIMARY KEY,
+    showroom_name VARCHAR(100) NOT NULL UNIQUE,
+    seat_count INT NOT NULL
+);
+
+INSERT INTO showrooms (showroom_name, seat_count)
+VALUES
+('Showroom 1', 32),
+('Showroom 2', 24),
+('Showroom 3', 40)
+ON DUPLICATE KEY UPDATE
+seat_count = VALUES(seat_count);
+
+CREATE TABLE IF NOT EXISTS showtimes (
+    showtime_id INT AUTO_INCREMENT PRIMARY KEY,
+
+    movie_id INT NOT NULL,
+    showroom_id INT NOT NULL,
+
+    show_date DATE NOT NULL,
+    show_time TIME NOT NULL,
+
+    FOREIGN KEY (movie_id) REFERENCES movies(movie_id),
+
+    FOREIGN KEY (showroom_id) REFERENCES showrooms(showroom_id),
+
+    CONSTRAINT uq_showroom_date_time
+        UNIQUE (showroom_id, show_date, show_time)
 );
 
 CREATE TABLE IF NOT EXISTS bookings (
@@ -92,15 +106,17 @@ CREATE TABLE IF NOT EXISTS favorite_movies (
     FOREIGN KEY (movie_id) REFERENCES movies(movie_id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS showrooms (
-    showroom_id INT AUTO_INCREMENT PRIMARY KEY,
-    showroom_name VARCHAR(100) NOT NULL UNIQUE,
-    seat_count INT NOT NULL
+CREATE TABLE IF NOT EXISTS seat_locks (
+    lock_id INT AUTO_INCREMENT PRIMARY KEY,
+    showtime_id INT NOT NULL,
+    seat_number VARCHAR(10) NOT NULL,
+    account_id INT,
+    session_id VARCHAR(100) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    created_at DATETIME NOT NULL,
+    CONSTRAINT uq_seat_lock_showtime_seat UNIQUE (showtime_id, seat_number),
+    INDEX idx_seat_lock_showtime (showtime_id),
+    INDEX idx_seat_lock_expires_at (expires_at),
+    FOREIGN KEY (showtime_id) REFERENCES showtimes(showtime_id) ON DELETE CASCADE,
+    FOREIGN KEY (account_id) REFERENCES users(user_id) ON DELETE SET NULL
 );
-INSERT INTO showrooms (showroom_name, seat_count)
-VALUES
-('Showroom 1', 32),
-('Showroom 2', 32),
-('Showroom 3', 32)
-ON DUPLICATE KEY UPDATE
-seat_count = VALUES(seat_count);

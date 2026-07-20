@@ -307,10 +307,13 @@
                 <button id="addCardButton" class="form-button form-button--secondary" type="button">Add Card</button>
 
                 <div id="cardFields" class="card-fields" hidden>
+                    <h3 id="cardFormTitle">Add Payment Card</h3>
+                    <p id="cardEditHelp" class="form-help" hidden>Leave card number and CVV blank to keep the existing encrypted values.</p>
+
                     <label for="cardName">Name on card <span>*</span></label>
                     <input id="cardName" name="cardName" type="text" autocomplete="cc-name">
 
-                    <label for="cardNumber">Card number <span>*</span></label>
+                    <label for="cardNumber">Card number <span id="cardNumberRequired">*</span></label>
                     <input id="cardNumber" name="cardNumber" type="text" inputmode="numeric" autocomplete="cc-number" placeholder="1234 1234 1234 1234" maxlength="23">
 
                     <div class="card-field-row">
@@ -320,12 +323,12 @@
                         </div>
 
                         <div>
-                            <label for="cardCvv">CVV <span>*</span></label>
+                            <label for="cardCvv">CVV <span id="cardCvvRequired">*</span></label>
                             <input id="cardCvv" name="cardCvv" type="text" inputmode="numeric" autocomplete="cc-csc" placeholder="123" maxlength="4">
                         </div>
                     </div>
 
-                    <label for="cardZip">Billing ZIP <span>*</span></label>
+                    <label for="cardZip">Billing ZIP <span id="cardZipRequired">*</span></label>
                     <input id="cardZip" name="cardZip" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="30602">
 
                     <div class="card-form-actions">

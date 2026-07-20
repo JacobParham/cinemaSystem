@@ -830,6 +830,11 @@ h1 {
     padding: 8px 10px;
 }
 
+.card-actions {
+    display: flex;
+    gap: 8px;
+}
+
 .admin-menu {
     display: grid;
     grid-template-columns: repeat(2, minmax(180px, 1fr));

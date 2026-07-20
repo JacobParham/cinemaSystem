@@ -1,18 +1,25 @@
 package com.cinema.booking.config;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.cinema.booking.model.Booking;
 import com.cinema.booking.model.Movie;
+import com.cinema.booking.model.Showroom;
 import com.cinema.booking.model.Showtime;
+import com.cinema.booking.repository.BookingRepository;
 import com.cinema.booking.repository.MovieRepository;
+import com.cinema.booking.repository.ShowroomRepository;
 import com.cinema.booking.repository.ShowtimeRepository;
 
 @Component
@@ -20,21 +27,38 @@ public class DatabaseSeeder implements CommandLineRunner {
 
     private final MovieRepository movieRepository;
     private final ShowtimeRepository showtimeRepository;
+    private final ShowroomRepository showroomRepository;
+    private final BookingRepository bookingRepository;
 
-    public DatabaseSeeder(MovieRepository movieRepository, ShowtimeRepository showtimeRepository) {
+    public DatabaseSeeder(
+            MovieRepository movieRepository,
+            ShowtimeRepository showtimeRepository,
+            ShowroomRepository showroomRepository,
+            BookingRepository bookingRepository) {
         this.movieRepository = movieRepository;
         this.showtimeRepository = showtimeRepository;
+        this.showroomRepository = showroomRepository;
+        this.bookingRepository = bookingRepository;
     }
 
     @Override
     @Transactional
     public void run(String... args) {
-        if (movieRepository.count() > 0) {
-            return;
+        Map<String, Movie> moviesByTitle = movieRepository.count() == 0
+                ? seedMovies()
+                : movieRepository.findAll().stream().collect(Collectors.toMap(
+                        Movie::getTitle,
+                        Function.identity(),
+                        (first, ignored) -> first,
+                        LinkedHashMap::new));
+
+        if (showtimeRepository.count() == 0) {
+            seedShowtimes(moviesByTitle);
         }
 
-        Map<String, Movie> moviesByTitle = seedMovies();
-        seedShowtimes(moviesByTitle);
+        if (bookingRepository.count() == 0) {
+            seedDemoBooking();
+        }
     }
 
     private Map<String, Movie> seedMovies() {
@@ -158,7 +182,13 @@ public class DatabaseSeeder implements CommandLineRunner {
                 showtime("Michael", "2026-07-28", "16:30:00"),
                 showtime("Moana", "2026-07-28", "15:00:00"));
 
-        for (ShowtimeSeed seed : showtimeSeeds) {
+        List<Showroom> showrooms = List.of(
+                requiredShowroom("Showroom 1"),
+                requiredShowroom("Showroom 2"),
+                requiredShowroom("Showroom 3"));
+
+        for (int index = 0; index < showtimeSeeds.size(); index++) {
+            ShowtimeSeed seed = showtimeSeeds.get(index);
             Movie movie = moviesByTitle.get(seed.movieTitle());
             if (movie == null) {
                 continue;
@@ -166,10 +196,30 @@ public class DatabaseSeeder implements CommandLineRunner {
 
             Showtime showtime = new Showtime();
             showtime.setMovie(movie);
+            showtime.setShowroom(showrooms.get(index % showrooms.size()));
             showtime.setShowDate(seed.showDate());
             showtime.setShowTime(seed.showTime());
             showtimeRepository.save(showtime);
         }
+    }
+
+    private Showroom requiredShowroom(String showroomName) {
+        return showroomRepository.findByShowroomName(showroomName)
+                .orElseThrow(() -> new IllegalStateException(
+                        showroomName + " was not created by db/schema.sql."));
+    }
+
+    private void seedDemoBooking() {
+        showtimeRepository.findAll().stream().findFirst().ifPresent(showtime -> {
+            Booking booking = new Booking();
+            booking.setShowtime(showtime);
+            booking.setAdultTickets(2);
+            booking.setChildTickets(0);
+            booking.setSeniorTickets(0);
+            booking.setSeatNumbers("A1,A2");
+            booking.setTotalPrice(new BigDecimal("28.00"));
+            bookingRepository.save(booking);
+        });
     }
 
     private static Movie movie(

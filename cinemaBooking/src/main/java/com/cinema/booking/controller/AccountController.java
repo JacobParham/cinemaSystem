@@ -140,7 +140,36 @@ public class AccountController {
             String expiration = payload.getOrDefault("expiration", "");
             String cvv = payload.getOrDefault("cvv", "");
             PaymentCard card = accountService.addPaymentCard(email, holder, number, expiration, cvv);
-            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("cardId", card.getCardId(), "last4", card.getLast4()));
+            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
+                    "cardId", card.getCardId(),
+                    "cardHolder", card.getCardHolder(),
+                    "last4", card.getLast4(),
+                    "expiration", card.getExpiration()));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", ex.getMessage()));
+        }
+    }
+
+    @PutMapping("/profile/cards/{id}")
+    public ResponseEntity<?> updateCard(
+            @PathVariable("id") int id,
+            @RequestBody Map<String, String> payload) {
+        String email = currentUserEmail();
+        if (email == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Not authenticated"));
+        try {
+            PaymentCard card = accountService.updatePaymentCard(
+                    email,
+                    id,
+                    payload.getOrDefault("cardHolder", ""),
+                    payload.getOrDefault("cardNumber", ""),
+                    payload.getOrDefault("expiration", ""),
+                    payload.getOrDefault("cvv", ""));
+            return ResponseEntity.ok(Map.of(
+                    "message", "Card updated",
+                    "cardId", card.getCardId(),
+                    "cardHolder", card.getCardHolder(),
+                    "last4", card.getLast4(),
+                    "expiration", card.getExpiration()));
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", ex.getMessage()));
         }

@@ -69,6 +69,7 @@ async function loadMovies() {
                         showTime: st.showTime,
                         showroomId: st.showroomId,
                         showroomName: st.showroomName,
+                        showroomSeatCount: st.showroomSeatCount,
                         showtimeId: st.showtimeId
                     };
                 })
@@ -89,15 +90,7 @@ async function loadMovies() {
             console.error("Failed to load showtimes for movie:", movie.movieId, error);
         }
         
-        // Fallback to hardcoded times if showtimes fail to load
-        return { 
-            ...movie, 
-            showtimes: [
-                { time: "2:00 PM", showtimeId: null },
-                { time: "5:00 PM", showtimeId: null },
-                { time: "8:00 PM", showtimeId: null }
-            ]
-        };
+        return { ...movie, showtimes: [], showtimeLoadError: true };
     }));
 
     movies = moviesWithShowtimes;
@@ -183,6 +176,11 @@ const cardExpiration = document.querySelector("#cardExpiration");
 const cardCvv = document.querySelector("#cardCvv");
 const cardZip = document.querySelector("#cardZip");
 const cardMessage = document.querySelector("#cardMessage");
+const cardFormTitle = document.querySelector("#cardFormTitle");
+const cardEditHelp = document.querySelector("#cardEditHelp");
+const cardNumberRequired = document.querySelector("#cardNumberRequired");
+const cardCvvRequired = document.querySelector("#cardCvvRequired");
+const cardZipRequired = document.querySelector("#cardZipRequired");
 const currentPassword = document.querySelector("#currentPassword");
 const newPassword = document.querySelector("#newPassword");
 const confirmNewPassword = document.querySelector("#confirmNewPassword");
@@ -209,11 +207,13 @@ const adminShowtimeList = document.querySelector("#adminShowtimeList");
 let currentMovieTitle = "";
 let currentMovieId = 0;
 let currentShowtimeId = 0;
+let currentShowroomSeatCount = 32;
 let currentSessionId = "";
 let deletingExpirationSlash = false;
 let deletingCardNumberSpace = false;
 let selectedSeats = [];
 let bookedSeats = [];
+let editingCardId = null;
 let pendingCheckoutAfterLogin = false;
 let promotionDrafts = [];
 let ticketCounts = {
@@ -349,9 +349,10 @@ function refreshSeatAvailability() {
 
     seatButtons.forEach(function (button) {
         const isSelected = button.classList.contains("selected-seat");
+        const isBooked = bookedSeats.includes(button.dataset.seat);
         const atSeatLimit = !isSelected && selectedSeats.length >= totalTickets && totalTickets > 0;
 
-        button.disabled = totalTickets === 0 || atSeatLimit;
+        button.disabled = isBooked || totalTickets === 0 || atSeatLimit;
         button.classList.toggle("seat-button--disabled", button.disabled);
     });
 }
@@ -484,7 +485,9 @@ function showMovieDetails(movieTitle) {
     detailsPoster.alt = selectedMovie.title + " poster";
     currentMovieTitle = selectedMovie.title;
 
-    if (!selectedMovie.showtimes || selectedMovie.showtimes.length === 0) {
+    if (selectedMovie.showtimeLoadError) {
+        showtimeButtons.innerHTML = '<p class="showtime-empty">Showtimes could not be loaded. Please try again.</p>';
+    } else if (!selectedMovie.showtimes || selectedMovie.showtimes.length === 0) {
         showtimeButtons.innerHTML = '<p class="showtime-empty">No showtimes scheduled yet.</p>';
     } else {
         showtimeButtons.innerHTML = selectedMovie.showtimes.map(function (showtimeObj) {
@@ -502,6 +505,7 @@ function showMovieDetails(movieTitle) {
                 data-showtime-id="${showtimeId}"
                 data-showroom-name="${showtimeObj.showroomName || ""}"
                 data-showroom-id="${showtimeObj.showroomId || ""}"
+                data-showroom-seat-count="${showtimeObj.showroomSeatCount || ""}"
                 ${disabledAttr}
             >
                 ${showtime}
@@ -536,7 +540,8 @@ function connectShowtimeButtons(movie) {
                 button.dataset.showtime,
                 button.dataset.showtimeId,
                 button.dataset.showroomName,
-                button.dataset.showroomId
+                button.dataset.showroomId,
+                button.dataset.showroomSeatCount
             );
         });
     });
@@ -548,7 +553,8 @@ function showBookingPage(
     showtime,
     showtimeId,
     showroomName,
-    showroomId
+    showroomId,
+    showroomSeatCount
 ) {
     const selectedMovie = movies.find(function (movie) {
         return movie.title === movieTitle;
@@ -567,12 +573,16 @@ function showBookingPage(
     currentMovieTitle = movieTitle;
     currentMovieId = movieId;
     currentShowtimeId = showtimeId;
+    const parsedSeatCount = Number(showroomSeatCount);
+    currentShowroomSeatCount = Number.isInteger(parsedSeatCount) && parsedSeatCount > 0
+        ? parsedSeatCount
+        : 32;
     
     // Generate a new session ID for this booking session
     currentSessionId = generateSessionId();
     
     resetBookingForm();
-    createSeatLayout();
+    createSeatLayout(currentShowroomSeatCount);
     loadBookedSeats(showtimeId);
 
     homePage.style.display = "none";
@@ -688,6 +698,8 @@ function markBookedSeats() {
             button.classList.remove("booked-seat");
         }
     });
+
+    refreshSeatAvailability();
 }
 
 function changeTicketCount(ticketType, amount) {
@@ -698,17 +710,19 @@ function changeTicketCount(ticketType, amount) {
     updateBookingSummary();
 }
 
-function createSeatLayout() {
-    const rows = ["A", "B", "C", "D"];
+function createSeatLayout(seatCount) {
     const seatsPerRow = 8;
     let seatButtons = "";
 
-    rows.forEach(function (row) {
-        for (let seatNumber = 1; seatNumber <= seatsPerRow; seatNumber++) {
+    for (let seatIndex = 0; seatIndex < seatCount; seatIndex += seatsPerRow) {
+        const row = String.fromCharCode(65 + Math.floor(seatIndex / seatsPerRow));
+        const seatsInRow = Math.min(seatsPerRow, seatCount - seatIndex);
+
+        for (let seatNumber = 1; seatNumber <= seatsInRow; seatNumber++) {
             const seatName = row + seatNumber;
             seatButtons += `<button class="seat-button" type="button" data-seat="${seatName}">${seatName}</button>`;
         }
-    });
+    }
 
     seatLayout.innerHTML = seatButtons;
     connectSeatButtons();
@@ -770,7 +784,8 @@ function updateBookingSummary() {
 
 async function lockSelectedSeats() {
     if (!currentShowtimeId || selectedSeats.length === 0) {
-        return;
+        showBookingFeedback("Select a valid showtime and seats before checkout.", "error");
+        return false;
     }
 
     try {
@@ -790,15 +805,19 @@ async function lockSelectedSeats() {
             const errorData = await response.json();
             showBookingFeedback(errorData.message || "Failed to lock seats", "error");
             // Refresh booked seats if locking failed
-            loadBookedSeats(currentShowtimeId);
+            await loadBookedSeats(currentShowtimeId);
+            return false;
         }
+
+        return true;
     } catch (error) {
         console.error("Error locking seats:", error);
         showBookingFeedback("Failed to lock seats. Please try again.", "error");
+        return false;
     }
 }
 
-function handleCheckout() {
+async function handleCheckout() {
     const totalTickets = getTotalTickets();
 
     if (totalTickets === 0) {
@@ -808,6 +827,11 @@ function handleCheckout() {
 
     if (selectedSeats.length !== totalTickets) {
         showBookingFeedback("Select exactly " + totalTickets + " seat(s) to match your tickets.", "error");
+        return;
+    }
+
+    const seatsLocked = await lockSelectedSeats();
+    if (!seatsLocked) {
         return;
     }
 
@@ -984,7 +1008,12 @@ async function loadProfile() {
 
         // Store cards from backend and render
         savedCards = (data.cards || []).map(function (c) {
-            return { cardId: c.cardId, label: "Card ending in " + c.last4, last4: c.last4 };
+            return {
+                cardId: c.cardId,
+                cardHolder: c.cardHolder,
+                last4: c.last4,
+                expiration: c.expiration
+            };
         });
 
         // Load favorites from backend
@@ -1007,17 +1036,25 @@ async function loadProfile() {
 function renderPaymentCards() {
     addCardButton.disabled = savedCards.length >= 3;
     paymentCardList.innerHTML = savedCards.map(function (card, index) {
-        const label = card.label || card;
         const cardId = card.cardId;
         return `
             <div class="simple-list-row">
-                <span>${label}</span>
-                <button type="button" data-card-index="${index}" data-card-id="${cardId || ""}">Remove</button>
+                <span>Card ending in ${card.last4} | expires ${card.expiration}</span>
+                <span class="card-actions">
+                    <button type="button" data-card-edit-index="${index}">Edit</button>
+                    <button type="button" data-card-remove-index="${index}" data-card-id="${cardId || ""}">Remove</button>
+                </span>
             </div>
         `;
     }).join("");
 
-    document.querySelectorAll("[data-card-index]").forEach(function (button) {
+    document.querySelectorAll("[data-card-edit-index]").forEach(function (button) {
+        button.addEventListener("click", function () {
+            beginEditCard(Number(button.dataset.cardEditIndex));
+        });
+    });
+
+    document.querySelectorAll("[data-card-remove-index]").forEach(function (button) {
         button.addEventListener("click", async function () {
             const cardId = button.dataset.cardId;
             if (cardId) {
@@ -1035,7 +1072,7 @@ function renderPaymentCards() {
                     return;
                 }
             }
-            savedCards.splice(Number(button.dataset.cardIndex), 1);
+            savedCards.splice(Number(button.dataset.cardRemoveIndex), 1);
             renderPaymentCards();
             hideCardFields();
             setFormMessage(profileMessage, "Card removed.", "success");
@@ -1327,12 +1364,48 @@ function addDemoCard() {
         return;
     }
 
+    editingCardId = null;
+    configureCardForm(false);
     cardFields.hidden = false;
     cardName.focus();
     setFormMessage(profileMessage, "", "success");
 }
 
+function beginEditCard(cardIndex) {
+    const card = savedCards[cardIndex];
+    if (!card || !card.cardId) {
+        setFormMessage(profileMessage, "Could not edit this card.", "error");
+        return;
+    }
+
+    editingCardId = card.cardId;
+    configureCardForm(true, card.last4);
+    cardName.value = card.cardHolder || "";
+    cardNumber.value = "";
+    cardExpiration.value = card.expiration || "";
+    cardCvv.value = "";
+    cardZip.value = "";
+    cardFields.hidden = false;
+    cardName.focus();
+    setFormMessage(profileMessage, "", "success");
+    setFormMessage(cardMessage, "", "success");
+}
+
+function configureCardForm(isEditing, last4) {
+    cardFormTitle.textContent = isEditing ? "Edit Payment Card" : "Add Payment Card";
+    cardEditHelp.hidden = !isEditing;
+    cardNumberRequired.hidden = isEditing;
+    cardCvvRequired.hidden = isEditing;
+    cardZipRequired.hidden = isEditing;
+    saveCardButton.textContent = isEditing ? "Update Card" : "Save Card";
+    cardNumber.placeholder = isEditing ? "Leave blank to keep ending in " + last4 : "1234 1234 1234 1234";
+    cardCvv.placeholder = isEditing ? "Leave blank to keep" : "123";
+    cardZip.placeholder = isEditing ? "Optional while editing" : "30602";
+}
+
 function hideCardFields() {
+    editingCardId = null;
+    configureCardForm(false);
     cardFields.hidden = true;
     cardName.value = "";
     cardNumber.value = "";
@@ -1343,22 +1416,29 @@ function hideCardFields() {
 }
 
 async function saveCard() {
+    const isEditing = editingCardId !== null;
     const cardDigits = cardNumber.value.replace(/\D/g, "");
     const cvvDigits = cardCvv.value.replace(/\D/g, "");
     const expirationError = getCardExpirationError();
 
-    if (!cardName.value || !cardNumber.value || !cardExpiration.value || !cardCvv.value || !cardZip.value) {
+    if (!cardName.value || !cardExpiration.value ||
+            (!isEditing && (!cardNumber.value || !cardCvv.value || !cardZip.value))) {
         setFormMessage(cardMessage, "Please complete all card fields.", "error");
         return;
     }
 
-    if (cardDigits.length < 13 || cardDigits.length > 19) {
+    if (cardDigits.length > 0 && (cardDigits.length < 13 || cardDigits.length > 19)) {
         setFormMessage(cardMessage, "Please enter a valid card number.", "error");
         return;
     }
 
-    if (cvvDigits.length < 3 || cvvDigits.length > 4) {
+    if (cvvDigits.length > 0 && (cvvDigits.length < 3 || cvvDigits.length > 4)) {
         setFormMessage(cardMessage, "Please enter a valid CVV.", "error");
+        return;
+    }
+
+    if (isEditing && cardDigits.length > 0 && cvvDigits.length === 0) {
+        setFormMessage(cardMessage, "Enter the CVV when replacing the card number.", "error");
         return;
     }
 
@@ -1367,31 +1447,57 @@ async function saveCard() {
         return;
     }
 
-    if (savedCards.length >= 3) {
+    if (!isEditing && savedCards.length >= 3) {
         setFormMessage(cardMessage, "You can only store up to 3 payment cards.", "error");
         return;
     }
 
     try {
-        const response = await fetch(sprintTwoEndpoints.cards, {
-            method: "POST",
+        const cardIdBeingEdited = editingCardId;
+        const payload = {
+            cardHolder: cardName.value.trim(),
+            expiration: cardExpiration.value.trim()
+        };
+        if (!isEditing || cardDigits.length > 0) {
+            payload.cardNumber = cardDigits;
+        }
+        if (!isEditing || cvvDigits.length > 0) {
+            payload.cvv = cvvDigits;
+        }
+
+        const response = await fetch(
+            isEditing ? sprintTwoEndpoints.cards + "/" + cardIdBeingEdited : sprintTwoEndpoints.cards,
+            {
+            method: isEditing ? "PUT" : "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                cardHolder: cardName.value.trim(),
-                cardNumber: cardDigits,
-                expiration: cardExpiration.value.trim(),
-                cvv: cvvDigits
-            })
+            body: JSON.stringify(payload)
         });
         const data = await response.json();
         if (!response.ok) {
             setFormMessage(cardMessage, data.message || "Could not save card.", "error");
             return;
         }
-        savedCards.push({ cardId: data.cardId, label: "Card ending in " + data.last4, last4: data.last4 });
+
+        const updatedCard = {
+            cardId: data.cardId,
+            cardHolder: data.cardHolder,
+            last4: data.last4,
+            expiration: data.expiration
+        };
+        if (isEditing) {
+            const cardIndex = savedCards.findIndex(function (card) {
+                return Number(card.cardId) === Number(cardIdBeingEdited);
+            });
+            if (cardIndex >= 0) {
+                savedCards[cardIndex] = updatedCard;
+            }
+        } else {
+            savedCards.push(updatedCard);
+        }
+
         hideCardFields();
         renderPaymentCards();
-        setFormMessage(profileMessage, "Card added successfully.", "success");
+        setFormMessage(profileMessage, isEditing ? "Card updated successfully." : "Card added successfully.", "success");
     } catch (error) {
         setFormMessage(cardMessage, "Could not save card. Please try again.", "error");
     }
@@ -1498,7 +1604,7 @@ async function handleLogin(event) {
         } else if (pendingCheckoutAfterLogin) {
             pendingCheckoutAfterLogin = false;
             showActiveBookingPage();
-            handleCheckout();
+            await handleCheckout();
         } else {
             showHomePage();
         }
