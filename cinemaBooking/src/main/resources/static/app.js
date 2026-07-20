@@ -138,6 +138,7 @@ const bookingBackToMoviesButton = document.querySelector("#bookingBackToMoviesBu
 const orderSummaryBackButton = document.querySelector("#orderSummaryBackButton");
 const summaryMovieTitle = document.querySelector("#summaryMovieTitle");
 const summaryShowtime = document.querySelector("#summaryShowtime");
+const summaryShowroom = document.querySelector("#summaryShowroom");
 const summaryPoster = document.querySelector("#summaryPoster");
 const summaryTicketBreakdown = document.querySelector("#summaryTicketBreakdown");
 const summarySeats = document.querySelector("#summarySeats");
@@ -150,6 +151,7 @@ const orderSummaryBackToMoviesButton = document.querySelector("#orderSummaryBack
 const paymentBackButton = document.querySelector("#paymentBackButton");
 const paymentMovieTitle = document.querySelector("#paymentMovieTitle");
 const paymentShowtime = document.querySelector("#paymentShowtime");
+const paymentShowroom = document.querySelector("#paymentShowroom");
 const paymentSeats = document.querySelector("#paymentSeats");
 const paymentEmail = document.querySelector("#paymentEmail");
 const paymentTotal = document.querySelector("#paymentTotal");
@@ -826,6 +828,7 @@ function showOrderSummary() {
 
     summaryMovieTitle.textContent = currentMovieTitle;
     summaryShowtime.textContent = bookingShowtime.textContent;
+    summaryShowroom.textContent = bookingShowroom.textContent;
     summarySeats.textContent = selectedSeats.join(", ");
     summaryTotal.textContent = formatMoney(getTicketTotal());
     orderEmail.value = currentUser ? currentUser.email : "";
@@ -872,6 +875,7 @@ function handleProceedToPayment() {
 function showPaymentPage() {
     paymentMovieTitle.textContent = currentMovieTitle;
     paymentShowtime.textContent = bookingShowtime.textContent;
+    paymentShowroom.textContent = bookingShowroom.textContent;
     paymentSeats.textContent = selectedSeats.join(", ");
     paymentEmail.textContent = orderEmail.value.trim();
     paymentTotal.textContent = formatMoney(getTicketTotal());
