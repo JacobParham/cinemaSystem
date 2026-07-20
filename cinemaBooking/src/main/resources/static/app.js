@@ -67,8 +67,21 @@ async function loadMovies() {
                         time: formatShowtimeLabel(dateStr, timeStr),
                         showDate: st.showDate,
                         showTime: st.showTime,
-                        showtimeId: st.showtimeId 
+                        showroomId: st.showroomId,
+                        showroomName: st.showroomName,
+                        showtimeId: st.showtimeId
                     };
+                })
+                .sort(function (a, b) {
+                    const firstShowtime = new Date(
+                        a.showDate + "T" + a.showTime
+                    );
+
+                    const secondShowtime = new Date(
+                        b.showDate + "T" + b.showTime
+                    );
+
+                    return firstShowtime - secondShowtime;
                 });
                 return { ...movie, showtimes: formattedShowtimes };
             }
@@ -110,6 +123,7 @@ const detailsPoster = document.querySelector("#detailsPoster");
 const showtimeButtons = document.querySelector("#showtimeButtons");
 const bookingMovieTitle = document.querySelector("#bookingMovieTitle");
 const bookingShowtime = document.querySelector("#bookingShowtime");
+const bookingShowroom = document.querySelector("#bookingShowroom");
 const bookingPoster = document.querySelector("#bookingPoster");
 const adultTickets = document.querySelector("#adultTickets");
 const childTickets = document.querySelector("#childTickets");
@@ -478,7 +492,19 @@ function showMovieDetails(movieTitle) {
         const buttonClass = isBookable ? "showtime-button" : "showtime-button showtime-button--disabled";
         const disabledAttr = isBookable ? "" : " disabled";
 
-        return `<button class="${buttonClass}" type="button" data-showtime="${showtime}" data-showtime-id="${showtimeId}"${disabledAttr}>${showtime}</button>`;
+        return `
+            <button
+                class="${buttonClass}"
+                type="button"
+                data-showtime="${showtime}"
+                data-showtime-id="${showtimeId}"
+                data-showroom-name="${showtimeObj.showroomName || ""}"
+                data-showroom-id="${showtimeObj.showroomId || ""}"
+                ${disabledAttr}
+            >
+                ${showtime}
+            </button>
+        `;
         }).join("");
     }
 
@@ -502,12 +528,26 @@ function connectShowtimeButtons(movie) {
                 return;
             }
 
-            showBookingPage(movie.title, movie.movieId, button.dataset.showtime, button.dataset.showtimeId);
+            showBookingPage(
+                movie.title,
+                movie.movieId,
+                button.dataset.showtime,
+                button.dataset.showtimeId,
+                button.dataset.showroomName,
+                button.dataset.showroomId
+            );
         });
     });
 }
 
-function showBookingPage(movieTitle, movieId, showtime, showtimeId) {
+function showBookingPage(
+    movieTitle,
+    movieId,
+    showtime,
+    showtimeId,
+    showroomName,
+    showroomId
+) {
     const selectedMovie = movies.find(function (movie) {
         return movie.title === movieTitle;
     });
@@ -518,6 +558,8 @@ function showBookingPage(movieTitle, movieId, showtime, showtimeId) {
 
     bookingMovieTitle.textContent = movieTitle;
     bookingShowtime.textContent = showtime;
+    bookingShowroom.textContent =
+        showroomName || "Showroom unavailable";
     bookingPoster.src = selectedMovie.posterUrl;
     bookingPoster.alt = movieTitle + " poster";
     currentMovieTitle = movieTitle;
@@ -1151,7 +1193,9 @@ function renderAdminShowtimeList() {
                 <div class="simple-list-row">
                     <span>
                         ${movie.title}
-                        <span class="admin-showtime-meta">${showtime.time}</span>
+                        <span class="admin-showtime-meta">
+                            ${showtime.time} — ${showtime.showroomName || "Unknown showroom"}
+                        </span>
                     </span>
                 </div>
             `);
@@ -1207,7 +1251,10 @@ async function handleAdminMovieSubmit(event) {
 async function handleAdminShowtimeSubmit(event) {
     event.preventDefault();
 
-    if (!validateRequiredFields(adminShowtimeForm, adminShowtimeMessage)) {
+    if (!validateRequiredFields(
+        adminShowtimeForm,
+        adminShowtimeMessage
+    )) {
         return;
     }
 
@@ -1215,16 +1262,59 @@ async function handleAdminShowtimeSubmit(event) {
         movieId: Number(adminShowtimeForm.movieId.value),
         showDate: adminShowtimeForm.showDate.value,
         showTime: adminShowtimeForm.showTime.value,
-        showroom: adminShowtimeForm.showroom.value
+        showroomId: Number(
+            adminShowtimeForm.showroom.value
+        )
     };
 
-    // Add endpoint here
-    setFormMessage(
-        adminShowtimeMessage,
-        "Showtime form is ready. Backend needs POST /showtimes with movieId, showDate, showTime, and showroom.",
-        "error"
-    );
-    console.log("Showtime payload ready for endpoint:", payload);
+    try {
+        const response = await fetch("/showtimes", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+        });
+
+        let data = {};
+
+        try {
+            data = await response.json();
+        } catch (error) {
+            data = {};
+        }
+
+        if (!response.ok) {
+            setFormMessage(
+                adminShowtimeMessage,
+                data.message ||
+                    data.error ||
+                    "Could not add showtime.",
+                "error"
+            );
+            return;
+        }
+
+        setFormMessage(
+            adminShowtimeMessage,
+            "Showtime added successfully.",
+            "success"
+        );
+
+        adminShowtimeForm.reset();
+
+        await loadMovies();
+        renderMovies();
+        renderAdminShowtimeTools();
+    } catch (error) {
+        console.error("Failed to add showtime:", error);
+
+        setFormMessage(
+            adminShowtimeMessage,
+            "Could not add showtime. Please try again.",
+            "error"
+        );
+    }
 }
 
 function addDemoCard() {

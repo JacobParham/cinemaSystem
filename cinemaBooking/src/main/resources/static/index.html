@@ -112,7 +112,6 @@
             <p class="small-heading">Book Tickets</p>
             <h1>Review Your Showtime</h1>
 
-            <div class="booking-card">
                 <div class="booking-top">
                     <div>
                         <p>Movie</p>
@@ -120,10 +119,13 @@
 
                         <p>Showtime</p>
                         <h2 id="bookingShowtime"></h2>
+
+                        <p>Showroom</p>
+                        <h2 id="bookingShowroom"></h2>
                     </div>
 
-                    <img id="bookingPoster" class="booking-poster" src="" alt="">
-                </div>
+                <img id="bookingPoster" class="booking-poster" src="" alt="">
+            </div>
 
                 <h2>Tickets</h2>
                 <div class="ticket-list">
@@ -581,9 +583,9 @@
                     <label for="adminShowtimeRoom">Showroom <span>*</span></label>
                     <select id="adminShowtimeRoom" name="showroom" required aria-required="true">
                         <option value="">Select showroom</option>
-                        <option value="Showroom 1">Showroom 1</option>
-                        <option value="Showroom 2">Showroom 2</option>
-                        <option value="Showroom 3">Showroom 3</option>
+                        <option value="1">Showroom 1</option>
+                        <option value="2">Showroom 2</option>
+                        <option value="3">Showroom 3</option>
                     </select>
 
                     <button class="form-button" type="submit">Add Showtime</button>

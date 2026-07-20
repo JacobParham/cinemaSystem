@@ -12,9 +12,22 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 @Entity
-@Table(name = "showtimes")
+@Table(
+        name = "showtimes",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uq_showroom_date_time",
+                        columnNames = {
+                                "showroom_id",
+                                "show_date",
+                                "show_time"
+                        }
+                )
+        }
+)
 public class Showtime {
 
     @Id
@@ -26,33 +39,56 @@ public class Showtime {
     @JoinColumn(name = "movie_id", nullable = false)
     private Movie movie;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "showroom_id", nullable = false)
+    private Showroom showroom;
+
     @Column(name = "show_date", nullable = false)
     private LocalDate showDate;
 
     @Column(name = "show_time", nullable = false)
     private LocalTime showTime;
 
-    public Showtime() {}
-
-    public int getShowtimeId() { return showtimeId; }
-    public void setShowtimeId(int showtimeId) { this.showtimeId = showtimeId; }
-
-    public Movie getMovie() { return movie; }
-    public void setMovie(Movie movie) { this.movie = movie; }
-
-    public int getMovieId() {
-        return movie == null ? 0 : movie.getMovieId();
+    public Showtime() {
     }
 
-    public void setMovieId(int movieId) {
-        Movie selectedMovie = new Movie();
-        selectedMovie.setMovieId(movieId);
-        this.movie = selectedMovie;
+    public int getShowtimeId() {
+        return showtimeId;
     }
 
-    public LocalDate getShowDate() { return showDate; }
-    public void setShowDate(LocalDate showDate) { this.showDate = showDate; }
+    public void setShowtimeId(int showtimeId) {
+        this.showtimeId = showtimeId;
+    }
 
-    public LocalTime getShowTime() { return showTime; }
-    public void setShowTime(LocalTime showTime) { this.showTime = showTime; }
+    public Movie getMovie() {
+        return movie;
+    }
+
+    public void setMovie(Movie movie) {
+        this.movie = movie;
+    }
+
+    public Showroom getShowroom() {
+        return showroom;
+    }
+
+    public void setShowroom(Showroom showroom) {
+        this.showroom = showroom;
+    }
+
+    public LocalDate getShowDate() {
+        return showDate;
+    }
+
+    public void setShowDate(LocalDate showDate) {
+        this.showDate = showDate;
+    }
+
+    public LocalTime getShowTime() {
+        return showTime;
+    }
+
+    public void setShowTime(LocalTime showTime) {
+        this.showTime = showTime;
+    }
 }
