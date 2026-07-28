@@ -67,6 +67,7 @@ CREATE TABLE IF NOT EXISTS bookings (
     senior_tickets INT DEFAULT 0,
     seat_numbers VARCHAR(255),
     total_price DECIMAL(10,2),
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (showtime_id) REFERENCES showtimes(showtime_id),
     FOREIGN KEY (account_id) REFERENCES users(user_id) ON DELETE SET NULL
 );
@@ -119,4 +120,25 @@ CREATE TABLE IF NOT EXISTS seat_locks (
     INDEX idx_seat_lock_expires_at (expires_at),
     FOREIGN KEY (showtime_id) REFERENCES showtimes(showtime_id) ON DELETE CASCADE,
     FOREIGN KEY (account_id) REFERENCES users(user_id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS promotions (
+    promotion_id INT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(40) NOT NULL UNIQUE,
+    name VARCHAR(100) NOT NULL,
+    description VARCHAR(255),
+    discount_percent DECIMAL(5,2) NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT chk_promotion_discount
+        CHECK (
+            discount_percent > 0
+            AND discount_percent <= 100
+        ),
+
+    CONSTRAINT chk_promotion_dates
+        CHECK (end_date >= start_date)
 );

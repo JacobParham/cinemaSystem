@@ -38,4 +38,23 @@ public class NoOpEmailService implements EmailService {
     public String getLastTokenFor(String email) {
         return lastResetTokens.get(email.toLowerCase());
     }
+
+    @Override
+    public void sendPromotionEmail(
+            String recipientEmail,
+            String promotionName,
+            String promotionCode,
+            String description,
+            String discountPercent,
+            String startDate,
+            String endDate
+    ) {
+        System.out.println(
+                "Promotion email disabled. "
+                        + "Would send promotion "
+                        + promotionCode
+                        + " to "
+                        + recipientEmail
+        );
+    }
 }
