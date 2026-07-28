@@ -89,6 +89,22 @@ public class AccountService {
         accountRepository.save(account);
     }
 
+    public Account activateAccount(String email) {
+        Optional<Account> opt = accountRepository.findByEmailIgnoreCase(email);
+        if (opt.isEmpty()) throw new IllegalArgumentException("Account not found");
+        Account account = opt.get();
+        account.setStatus("Active");
+        return accountRepository.save(account);
+    }
+
+    public Account adminResetPassword(String email, String newPassword) {
+        Optional<Account> opt = accountRepository.findByEmailIgnoreCase(email);
+        if (opt.isEmpty()) throw new IllegalArgumentException("Account not found");
+        Account account = opt.get();
+        account.setPassword(passwordEncoder.encode(newPassword));
+        return accountRepository.save(account);
+    }
+
     public Account updateProfile(String email, String firstName, String lastName, Boolean promotions, String address) {
         Optional<Account> opt = accountRepository.findByEmailIgnoreCase(email);
         if (opt.isEmpty()) throw new IllegalArgumentException("Account not found");

@@ -151,6 +151,12 @@ const paymentTotal = document.querySelector("#paymentTotal");
 const paymentMessage = document.querySelector("#paymentMessage");
 const submitPaymentButton = document.querySelector("#submitPaymentButton");
 const paymentBackToMoviesButton = document.querySelector("#paymentBackToMoviesButton");
+const savedCardsSection = document.querySelector("#savedCardsSection");
+const checkoutSavedCards = document.querySelector("#checkoutSavedCards");
+const useNewCardButton = document.querySelector("#useNewCardButton");
+const newCardForm = document.querySelector("#newCardForm");
+const selectedCardDisplay = document.querySelector("#selectedCardDisplay");
+const changeCardButton = document.querySelector("#changeCardButton");
 const loginForm = document.querySelector("#loginForm");
 const registerForm = document.querySelector("#registerForm");
 const forgotPasswordForm = document.querySelector("#forgotPasswordForm");
@@ -896,7 +902,7 @@ function handleProceedToPayment() {
     showPaymentPage();
 }
 
-function showPaymentPage() {
+async function showPaymentPage() {
     paymentMovieTitle.textContent = currentMovieTitle;
     paymentShowtime.textContent = bookingShowtime.textContent;
     paymentShowroom.textContent = bookingShowroom.textContent;
@@ -905,15 +911,130 @@ function showPaymentPage() {
     paymentTotal.textContent = formatMoney(getTicketTotal());
     setFormMessage(paymentMessage, "", "success");
 
+    // Load saved cards if not already loaded
+    if (savedCards.length === 0 && currentUser) {
+        try {
+            const response = await fetch("/profile");
+            if (response.ok) {
+                const data = await response.json();
+                savedCards = (data.cards || []).map(function (c) {
+                    return {
+                        cardId: c.cardId,
+                        cardHolder: c.cardHolder,
+                        last4: c.last4,
+                        expiration: c.expiration
+                    };
+                });
+            }
+        } catch (error) {
+            console.error("Failed to load saved cards:", error);
+        }
+    }
+
+    renderCheckoutSavedCards();
     showPage("paymentPage");
 }
 
+function renderCheckoutSavedCards() {
+    // Reset forms
+    newCardForm.style.display = "none";
+    selectedCardDisplay.style.display = "none";
+    
+    // Clear payment form fields
+    document.querySelector("#paymentCardName").value = "";
+    document.querySelector("#paymentCardNumber").value = "";
+    document.querySelector("#paymentCardExpiry").value = "";
+    document.querySelector("#paymentCardCvv").value = "";
+
+    if (savedCards.length === 0) {
+        // No saved cards, show new card form
+        savedCardsSection.style.display = "none";
+        newCardForm.style.display = "grid";
+        return;
+    }
+
+    // Show saved cards
+    savedCardsSection.style.display = "block";
+    checkoutSavedCards.innerHTML = savedCards.map(function (card, index) {
+        return `
+            <div class="saved-card-option" data-card-index="${index}">
+                <div class="card-info">
+                    <span class="card-holder">${card.cardHolder}</span>
+                    <span class="card-number">•••• •••• •••• ${card.last4}</span>
+                    <span class="card-expiration">Expires ${card.expiration}</span>
+                </div>
+                <button class="select-card-button" type="button">Select</button>
+            </div>
+        `;
+    }).join("");
+
+    // Add event listeners to card selection buttons
+    document.querySelectorAll(".select-card-button").forEach(function (button) {
+        button.addEventListener("click", function () {
+            const cardIndex = button.parentElement.dataset.cardIndex;
+            selectSavedCard(Number(cardIndex));
+        });
+    });
+}
+
+function selectSavedCard(cardIndex) {
+    const card = savedCards[cardIndex];
+    if (!card) return;
+
+    // Hide saved cards section and new card form
+    savedCardsSection.style.display = "none";
+    newCardForm.style.display = "none";
+
+    // Show selected card display
+    selectedCardDisplay.style.display = "grid";
+
+    // Fill in the selected card information
+    document.querySelector("#selectedCardName").value = card.cardHolder;
+    document.querySelector("#selectedCardNumber").value = `•••• •••• •••• ${card.last4}`;
+    document.querySelector("#selectedCardExpiry").value = card.expiration;
+    document.querySelector("#selectedCardCvv").value = "";
+}
+
+function showNewCardForm() {
+    savedCardsSection.style.display = "none";
+    selectedCardDisplay.style.display = "none";
+    newCardForm.style.display = "grid";
+}
+
+function showSavedCardsSection() {
+    savedCardsSection.style.display = "block";
+    selectedCardDisplay.style.display = "none";
+    newCardForm.style.display = "none";
+}
+
 function handleSubmitPayment() {
-    setFormMessage(
-        paymentMessage,
-        "Payment details received for review. No real charge was made.",
-        "success"
-    );
+    // Check if using saved card or new card
+    const isUsingSavedCard = selectedCardDisplay.style.display !== "none";
+    
+    if (isUsingSavedCard) {
+        setFormMessage(
+            paymentMessage,
+            "Payment processed using saved card. No real charge was made.",
+            "success"
+        );
+    } else {
+        // Validate new card form
+        const cardName = document.querySelector("#paymentCardName").value.trim();
+        const cardNumber = document.querySelector("#paymentCardNumber").value.trim();
+        const cardExpiry = document.querySelector("#paymentCardExpiry").value.trim();
+        const cardCvv = document.querySelector("#paymentCardCvv").value.trim();
+        
+        if (!cardName || !cardNumber || !cardExpiry || !cardCvv) {
+            setFormMessage(paymentMessage, "Please complete all payment fields.", "error");
+            return;
+        }
+        
+        setFormMessage(
+            paymentMessage,
+            "Payment details received for review. No real charge was made.",
+            "success"
+        );
+    }
 }
 
 function returnToCurrentMovie() {
@@ -1833,6 +1954,8 @@ proceedToPaymentButton.addEventListener("click", handleProceedToPayment);
 paymentBackButton.addEventListener("click", showOrderSummary);
 paymentBackToMoviesButton.addEventListener("click", showHomePage);
 submitPaymentButton.addEventListener("click", handleSubmitPayment);
+useNewCardButton.addEventListener("click", showNewCardForm);
+changeCardButton.addEventListener("click", showSavedCardsSection);
 addCardButton.addEventListener("click", addDemoCard);
 saveCardButton.addEventListener("click", saveCard);
 cancelCardButton.addEventListener("click", hideCardFields);
@@ -1842,6 +1965,41 @@ cardCvv.addEventListener("input", formatCardCvv);
 cardExpiration.addEventListener("keydown", checkExpirationBackspace);
 cardExpiration.addEventListener("input", formatCardExpiration);
 profileAddress.addEventListener("input", renderAddressSuggestions);
+
+// Payment card form formatting for checkout
+const paymentCardNumber = document.querySelector("#paymentCardNumber");
+const paymentCardCvv = document.querySelector("#paymentCardCvv");
+const paymentCardExpiry = document.querySelector("#paymentCardExpiry");
+
+if (paymentCardNumber) {
+    paymentCardNumber.addEventListener("input", function() {
+        let digits = paymentCardNumber.value.replace(/\D/g, "").slice(0, 19);
+        let formatted = "";
+        for (let i = 0; i < digits.length; i++) {
+            if (i > 0 && i % 4 === 0) formatted += " ";
+            formatted += digits[i];
+        }
+        paymentCardNumber.value = formatted;
+    });
+}
+
+if (paymentCardCvv) {
+    paymentCardCvv.addEventListener("input", function() {
+        paymentCardCvv.value = paymentCardCvv.value.replace(/\D/g, "").slice(0, 4);
+    });
+}
+
+if (paymentCardExpiry) {
+    paymentCardExpiry.addEventListener("input", function() {
+        const digits = paymentCardExpiry.value.replace(/\D/g, "").slice(0, 4);
+        if (digits.length >= 2) {
+            paymentCardExpiry.value = digits.slice(0, 2) + "/" + digits.slice(2);
+        } else {
+            paymentCardExpiry.value = digits;
+        }
+    });
+}
+
 changePasswordButton.addEventListener("click", handleChangePassword);
 loginForm.addEventListener("submit", handleLogin);
 registerForm.addEventListener("submit", handleRegister);
