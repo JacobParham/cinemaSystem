@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.springframework.mail.SimpleMailMessage;
 
 import com.cinema.booking.model.Account;
 
@@ -101,5 +102,42 @@ public class SmtpEmailService implements EmailService {
         } catch (Exception ex) {
             System.err.println("Warning: failed to send verification email: " + ex.getMessage());
         }
+    }
+    @Override
+    public void sendPromotionEmail(
+            String recipientEmail,
+            String promotionName,
+            String promotionCode,
+            String description,
+            String discountPercent,
+            String startDate,
+            String endDate
+    ) {
+        String emailDescription =
+                description == null || description.isBlank()
+                        ? "Visit Cinema World for more details."
+                        : description;
+
+        String subject =
+                "New Cinema Promotion: " + promotionName;
+
+        String body =
+                "Hello,\n\n"
+                        + "A new Cinema World promotion is available!\n\n"
+                        + promotionName + "\n"
+                        + emailDescription + "\n\n"
+                        + "Promotion code: " + promotionCode + "\n"
+                        + "Discount: " + discountPercent + "% off\n"
+                        + "Valid from: " + startDate + "\n"
+                        + "Valid through: " + endDate + "\n\n"
+                        + "Thanks,\n"
+                        + "Cinema Booking Team";
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(recipientEmail);
+        message.setSubject(subject);
+        message.setText(body);
+
+        mailSender.send(message);
     }
 }

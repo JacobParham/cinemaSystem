@@ -1492,28 +1492,127 @@ function showAdminSection(panelId) {
     }
 
     if (panelId === "adminPromotionsPanel") {
-        renderAdminPromotionList();
+        loadAdminPromotions();
     }
 }
 
 function renderAdminPromotionList() {
     if (promotionDrafts.length === 0) {
-        adminPromotionList.innerHTML = "<p>No promotions added in this session.</p>";
+        adminPromotionList.innerHTML =
+            "<p>No promotions have been created.</p>";
         return;
     }
 
-    adminPromotionList.innerHTML = promotionDrafts.map(function (promotion) {
-        const emailLabel = promotion.sendEmail ? "Email subscribed users" : "No email";
+    adminPromotionList.innerHTML =
+        promotionDrafts.map(function (promotion) {
+            const discount =
+                Number(promotion.discountPercent);
 
-        return `
-            <div class="simple-list-row">
-                <span>
-                    ${promotion.code} - ${promotion.name}
-                    <span class="admin-showtime-meta">${promotion.discountPercent}% off | ${promotion.startDate} to ${promotion.endDate} | ${emailLabel}</span>
-                </span>
-            </div>
-        `;
-    }).join("");
+            const status =
+                promotion.active
+                    ? "Active"
+                    : "Inactive";
+
+            return `
+                <div class="simple-list-row">
+                    <span>
+                        <strong>
+                            ${promotion.code}
+                            -
+                            ${promotion.name}
+                        </strong>
+
+                        <span class="admin-showtime-meta">
+                            ${discount}% off |
+                            ${promotion.startDate}
+                            to
+                            ${promotion.endDate}
+                            |
+                            ${status}
+                        </span>
+
+                        ${
+                            promotion.description
+                                ? `
+                                    <span
+                                        class="admin-showtime-meta">
+                                        ${promotion.description}
+                                    </span>
+                                `
+                                : ""
+                        }
+                    </span>
+                </div>
+            `;
+        }).join("");
+}
+
+async function loadAdminPromotions() {
+    adminPromotionList.innerHTML =
+        "<p>Loading promotions...</p>";
+
+    try {
+        const response = await fetch("/api/promotions", {
+            method: "GET",
+            credentials: "same-origin"
+        });
+
+        const responseText = await response.text();
+
+        console.log(
+            "Promotion response status:",
+            response.status
+        );
+
+        console.log(
+            "Promotion response body:",
+            responseText
+        );
+
+        if (!response.ok) {
+            adminPromotionList.innerHTML =
+                `<p>
+                    Could not load promotions.
+                    Server returned ${response.status}.
+                </p>`;
+
+            return;
+        }
+
+        let data;
+
+        try {
+            data = JSON.parse(responseText);
+        } catch (error) {
+            console.error(
+                "Promotion response was not valid JSON:",
+                responseText
+            );
+
+            adminPromotionList.innerHTML =
+                "<p>The promotion server returned invalid data.</p>";
+
+            return;
+        }
+
+        promotionDrafts = Array.isArray(data)
+            ? data
+            : [];
+
+        renderAdminPromotionList();
+
+    } catch (error) {
+        console.error(
+            "Promotion loading error:",
+            error
+        );
+
+        adminPromotionList.innerHTML =
+            `<p>
+                Could not load promotions:
+                ${error.message}
+            </p>`;
+    }
 }
 
 function getPromotionValidationError() {
@@ -1535,36 +1634,102 @@ function getPromotionValidationError() {
 async function handleAdminPromotionSubmit(event) {
     event.preventDefault();
 
-    if (!validateRequiredFields(adminPromotionForm, adminPromotionMessage)) {
+    if (!validateRequiredFields(
+        adminPromotionForm,
+        adminPromotionMessage
+    )) {
         return;
     }
 
-    const validationError = getPromotionValidationError();
+    const validationError =
+        getPromotionValidationError();
+
     if (validationError) {
-        setFormMessage(adminPromotionMessage, validationError, "error");
+        setFormMessage(
+            adminPromotionMessage,
+            validationError,
+            "error"
+        );
         return;
     }
 
     const payload = {
-        code: adminPromotionForm.code.value.trim().toUpperCase(),
+        code: adminPromotionForm.code.value
+            .trim()
+            .toUpperCase(),
+
         name: adminPromotionForm.name.value.trim(),
-        discountPercent: Number(adminPromotionForm.discountPercent.value),
-        startDate: adminPromotionForm.startDate.value,
-        endDate: adminPromotionForm.endDate.value,
-        description: adminPromotionForm.description.value.trim(),
-        sendEmail: adminPromotionForm.sendEmail.checked
+
+        discountPercent: Number(
+            adminPromotionForm.discountPercent.value
+        ),
+
+        startDate:
+            adminPromotionForm.startDate.value,
+
+        endDate:
+            adminPromotionForm.endDate.value,
+
+        description:
+            adminPromotionForm.description.value.trim(),
+
+        sendEmail:
+            adminPromotionForm.sendEmail.checked
     };
 
-    // Add endpoint here
-    promotionDrafts.unshift(payload);
-    renderAdminPromotionList();
-    adminPromotionForm.reset();
     setFormMessage(
         adminPromotionMessage,
-        "Promotion UI is ready. Backend needs an endpoint to save promotions and email subscribed users.",
+        payload.sendEmail
+            ? "Saving promotion and sending emails..."
+            : "Saving promotion...",
         "success"
     );
-    console.log("Promotion payload ready for endpoint:", payload);
+
+    try {
+        const response = await fetch("/api/promotions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            setFormMessage(
+                adminPromotionMessage,
+                data.message ||
+                    "Could not create promotion.",
+                "error"
+            );
+
+            return;
+        }
+
+        adminPromotionForm.reset();
+
+        setFormMessage(
+            adminPromotionMessage,
+            data.message ||
+                "Promotion created successfully.",
+            "success"
+        );
+
+        await loadAdminPromotions();
+
+    } catch (error) {
+        console.error(
+            "Promotion creation error:",
+            error
+        );
+
+        setFormMessage(
+            adminPromotionMessage,
+            "Could not connect to the promotion backend.",
+            "error"
+        );
+    }
 }
 
 function renderAdminShowtimeTools() {
