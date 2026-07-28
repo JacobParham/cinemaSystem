@@ -188,6 +188,8 @@ const changePasswordButton = document.querySelector("#changePasswordButton");
 const changePasswordMessage = document.querySelector("#changePasswordMessage");
 const paymentCardList = document.querySelector("#paymentCardList");
 const favoriteMovieList = document.querySelector("#favoriteMovieList");
+const orderHistoryList = document.querySelector("#orderHistoryList");
+const orderHistoryMessage = document.querySelector("#orderHistoryMessage");
 const profileAddress = document.querySelector("#profileAddress");
 const addressSuggestions = document.querySelector("#addressSuggestions");
 const logoutButton = document.querySelector("#logoutButton");
@@ -227,6 +229,115 @@ const ticketPrices = {
     child: 9,
     senior: 10
 };
+
+function createHistoryTicketBreakdown(booking) {
+    const ticketParts = [];
+
+    const adultTickets =
+        Number(booking.adultTickets || 0);
+
+    const childTickets =
+        Number(booking.childTickets || 0);
+
+    const seniorTickets =
+        Number(booking.seniorTickets || 0);
+
+    if (adultTickets > 0) {
+        ticketParts.push(
+            adultTickets +
+            (adultTickets === 1
+                ? " adult ticket"
+                : " adult tickets")
+        );
+    }
+
+    if (childTickets > 0) {
+        ticketParts.push(
+            childTickets +
+            (childTickets === 1
+                ? " child ticket"
+                : " child tickets")
+        );
+    }
+
+    if (seniorTickets > 0) {
+        ticketParts.push(
+            seniorTickets +
+            (seniorTickets === 1
+                ? " senior ticket"
+                : " senior tickets")
+        );
+    }
+
+    return ticketParts.length > 0
+        ? ticketParts.join(" · ")
+        : "No ticket details";
+}
+
+function formatHistoryDate(dateString) {
+    if (!dateString) {
+        return "Date unavailable";
+    }
+
+    const parts = dateString.split("-");
+
+    if (parts.length !== 3) {
+        return dateString;
+    }
+
+    const date = new Date(
+        Number(parts[0]),
+        Number(parts[1]) - 1,
+        Number(parts[2])
+    );
+
+    return date.toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric"
+    });
+}
+
+function formatHistoryTime(timeString) {
+    if (!timeString) {
+        return "Time unavailable";
+    }
+
+    const parts = timeString.split(":");
+
+    const date = new Date();
+    date.setHours(
+        Number(parts[0]),
+        Number(parts[1]),
+        0,
+        0
+    );
+
+    return date.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit"
+    });
+}
+
+function formatHistoryDateTime(dateTimeString) {
+    if (!dateTimeString) {
+        return "Date unavailable";
+    }
+
+    const date = new Date(dateTimeString);
+
+    if (Number.isNaN(date.getTime())) {
+        return dateTimeString;
+    }
+
+    return date.toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit"
+    });
+}
 
 function isBookableShowtime(showtime) {
     return showtime.toLowerCase() !== "coming soon";
@@ -1028,6 +1139,7 @@ async function loadProfile() {
 
         renderPaymentCards();
         renderFavoriteMovies();
+        await loadOrderHistory();
     } catch (error) {
         setFormMessage(profileMessage, "Could not load profile data.", "error");
     }
@@ -1097,6 +1209,256 @@ function renderFavoriteMovies() {
         };
     });
     connectFavoriteButtons();
+}
+
+async function loadOrderHistory() {
+    orderHistoryList.innerHTML = "";
+
+    setFormMessage(
+        orderHistoryMessage,
+        "Loading order history...",
+        "success"
+    );
+
+    try {
+        const response = await fetch("/bookings/history");
+        const data = await response.json();
+
+        if (!response.ok) {
+            setFormMessage(
+                orderHistoryMessage,
+                data.message || "Could not load order history.",
+                "error"
+            );
+            return;
+        }
+
+        const bookings = Array.isArray(data.bookings)
+            ? data.bookings
+            : [];
+
+        renderOrderHistory(bookings);
+
+        setFormMessage(
+            orderHistoryMessage,
+            "",
+            "success"
+        );
+    } catch (error) {
+        console.error("Order history error:", error);
+
+        setFormMessage(
+            orderHistoryMessage,
+            "Could not load order history.",
+            "error"
+        );
+    }
+}
+
+function renderOrderHistory(bookings) {
+    orderHistoryList.innerHTML = "";
+
+    if (bookings.length === 0) {
+        orderHistoryList.innerHTML =
+            "<p>You have not placed any orders yet.</p>";
+        return;
+    }
+
+    bookings.forEach(function (booking) {
+        const card = document.createElement("article");
+        card.className = "order-history-card";
+
+        const poster = document.createElement("img");
+        poster.className = "order-history-poster";
+        poster.src = booking.posterUrl || "";
+        poster.alt = (booking.movieTitle || "Movie") + " poster";
+
+        const details = document.createElement("div");
+        details.className = "order-history-details";
+
+        const heading = document.createElement("div");
+        heading.className = "order-history-heading";
+
+        const titleArea = document.createElement("div");
+
+        const orderNumber = document.createElement("p");
+        orderNumber.className = "movie-meta";
+        orderNumber.textContent =
+            "Order #" + booking.bookingId;
+
+        const title = document.createElement("h2");
+        title.textContent =
+            booking.movieTitle || "Unknown movie";
+
+        titleArea.appendChild(orderNumber);
+        titleArea.appendChild(title);
+
+        const total = document.createElement("strong");
+        total.textContent = formatMoney(
+            Number(booking.totalPrice || 0)
+        );
+
+        heading.appendChild(titleArea);
+        heading.appendChild(total);
+
+        const showtimeText = document.createElement("p");
+        showtimeText.innerHTML = "<strong>Showtime:</strong> ";
+
+        showtimeText.appendChild(
+            document.createTextNode(
+                formatHistoryDate(booking.showDate) +
+                " at " +
+                formatHistoryTime(booking.showTime)
+            )
+        );
+
+        const showroomText = document.createElement("p");
+        showroomText.innerHTML = "<strong>Showroom:</strong> ";
+
+        showroomText.appendChild(
+            document.createTextNode(
+                booking.showroomName || "Unavailable"
+            )
+        );
+
+        const seatsText = document.createElement("p");
+        seatsText.innerHTML = "<strong>Seats:</strong> ";
+
+        seatsText.appendChild(
+            document.createTextNode(
+                booking.seatNumbers || "None"
+            )
+        );
+
+        const totalTickets =
+            Number(booking.adultTickets || 0) +
+            Number(booking.childTickets || 0) +
+            Number(booking.seniorTickets || 0);
+
+        const ticketsText = document.createElement("p");
+        ticketsText.innerHTML = "<strong>Tickets:</strong> ";
+
+        ticketsText.appendChild(
+            document.createTextNode(
+                totalTickets +
+                (totalTickets === 1
+                    ? " ticket"
+                    : " tickets")
+            )
+        );
+
+        const breakdown = document.createElement("p");
+        breakdown.className = "order-history-breakdown";
+        breakdown.textContent =
+            createHistoryTicketBreakdown(booking);
+
+        const placed = document.createElement("p");
+        placed.className = "order-history-placed";
+        placed.textContent =
+            "Ordered " +
+            formatHistoryDateTime(booking.createdAt);
+
+        details.appendChild(heading);
+        details.appendChild(showtimeText);
+        details.appendChild(showroomText);
+        details.appendChild(seatsText);
+        details.appendChild(ticketsText);
+        details.appendChild(breakdown);
+        details.appendChild(placed);
+
+        card.appendChild(poster);
+        card.appendChild(details);
+
+        orderHistoryList.appendChild(card);
+    });
+}
+
+function createTicketBreakdown(booking) {
+    const ticketParts = [];
+
+    if (booking.adultTickets > 0) {
+        ticketParts.push(
+            booking.adultTickets +
+            " adult"
+        );
+    }
+
+    if (booking.childTickets > 0) {
+        ticketParts.push(
+            booking.childTickets +
+            " child"
+        );
+    }
+
+    if (booking.seniorTickets > 0) {
+        ticketParts.push(
+            booking.seniorTickets +
+            " senior"
+        );
+    }
+
+    return `
+        <p class="order-history-breakdown">
+            ${ticketParts.join(" · ")}
+        </p>
+    `;
+}
+
+function formatOrderDate(dateString) {
+    if (!dateString) {
+        return "Date unavailable";
+    }
+
+    const parts = dateString.split("-");
+
+    const date = new Date(
+        Number(parts[0]),
+        Number(parts[1]) - 1,
+        Number(parts[2])
+    );
+
+    return date.toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric"
+    });
+}
+
+function formatOrderTime(timeString) {
+    if (!timeString) {
+        return "Time unavailable";
+    }
+
+    const parts = timeString.split(":");
+    const date = new Date();
+
+    date.setHours(
+        Number(parts[0]),
+        Number(parts[1]),
+        0,
+        0
+    );
+
+    return date.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit"
+    });
+}
+
+function formatOrderDateTime(dateTimeString) {
+    const date = new Date(dateTimeString);
+
+    if (Number.isNaN(date.getTime())) {
+        return "Date unavailable";
+    }
+
+    return date.toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit"
+    });
 }
 
 function renderAddressSuggestions() {

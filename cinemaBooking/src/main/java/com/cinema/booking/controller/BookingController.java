@@ -251,6 +251,59 @@ public class BookingController {
         ));
     }
 
+    /**
+     * GET /bookings/history
+     * Returns all bookings belonging to the currently logged-in customer.
+     */
+    @GetMapping("/history")
+    public ResponseEntity<?> getOrderHistory(Principal principal) {
+
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of(
+                            "message",
+                            "You must be logged in to view order history."
+                    ));
+        }
+
+        Integer accountId = accountRepository
+                .findByEmailIgnoreCase(principal.getName())
+                .map(account -> account.getAccountId())
+                .orElse(null);
+
+        if (accountId == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", "Account not found."));
+        }
+
+        List<BookingHistoryResponse> history = bookingRepository
+                .findByAccountIdOrderByCreatedAtDesc(accountId)
+                .stream()
+                .map(booking -> {
+                    Showtime showtime = booking.getShowtime();
+
+                    return new BookingHistoryResponse(
+                            booking.getBookingId(),
+                            showtime.getShowtimeId(),
+                            showtime.getMovie().getMovieId(),
+                            showtime.getMovie().getTitle(),
+                            showtime.getMovie().getPosterUrl(),
+                            showtime.getShowroom().getShowroomName(),
+                            showtime.getShowDate(),
+                            showtime.getShowTime(),
+                            booking.getAdultTickets(),
+                            booking.getChildTickets(),
+                            booking.getSeniorTickets(),
+                            booking.getSeatNumbers(),
+                            booking.getTotalPrice(),
+                            booking.getCreatedAt()
+                    );
+                })
+                .toList();
+
+        return ResponseEntity.ok(Map.of("bookings", history));
+    }
+
     public record BookingRequest(
             int showtimeId,
             int adultTickets,

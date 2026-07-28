@@ -67,6 +67,7 @@ CREATE TABLE IF NOT EXISTS bookings (
     senior_tickets INT DEFAULT 0,
     seat_numbers VARCHAR(255),
     total_price DECIMAL(10,2),
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (showtime_id) REFERENCES showtimes(showtime_id),
     FOREIGN KEY (account_id) REFERENCES users(user_id) ON DELETE SET NULL
 );
