@@ -44,6 +44,36 @@ public class AccountController {
         this.favoriteMovieRepository = favoriteMovieRepository;
     }
 
+    @PostMapping("/admin/activate-account")
+    public ResponseEntity<?> activateAccount(@RequestBody Map<String, String> payload) {
+        String email = String.valueOf(payload.getOrDefault("email", "")).trim();
+        try {
+            Account account = accountService.activateAccount(email);
+            return ResponseEntity.ok(Map.of(
+                    "message", "Account activated successfully",
+                    "email", account.getEmail(),
+                    "status", account.getStatus()
+            ));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", ex.getMessage()));
+        }
+    }
+
+    @PostMapping("/admin/reset-password")
+    public ResponseEntity<?> adminResetPassword(@RequestBody Map<String, String> payload) {
+        String email = String.valueOf(payload.getOrDefault("email", "")).trim();
+        String newPassword = String.valueOf(payload.getOrDefault("newPassword", ""));
+        try {
+            Account account = accountService.adminResetPassword(email, newPassword);
+            return ResponseEntity.ok(Map.of(
+                    "message", "Password reset successfully",
+                    "email", account.getEmail()
+            ));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", ex.getMessage()));
+        }
+    }
+
     @PostMapping({"/register", "/accounts/register"})
     public ResponseEntity<?> register(@RequestBody Map<String, Object> payload) {
         try {

@@ -431,25 +431,58 @@
                 </div>
 
                 <h2 style="margin-top: 26px;">Payment Details</h2>
-                <div class="account-form" style="padding: 18px; gap: 12px;">
+                
+                <!-- Saved Cards Section -->
+                <div id="savedCardsSection" style="margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 12px; font-size: 1.1rem;">Saved Payment Cards</h3>
+                    <div id="checkoutSavedCards" class="saved-cards-list"></div>
+                    <button id="useNewCardButton" class="text-button" type="button" style="margin-top: 12px;">+ Use new card</button>
+                </div>
+
+                <!-- New Card Form -->
+                <div id="newCardForm" class="account-form" style="padding: 18px; gap: 12px; display: none;">
                     <p class="form-help" style="grid-column: 1/-1;">Payment processing is a mockup. No real charge will occur.</p>
 
-                    <label for="paymentCardName">Name on card</label>
-                    <input id="paymentCardName" type="text" autocomplete="cc-name" placeholder="Jane Smith" disabled>
+                    <label for="paymentCardName">Name on card <span>*</span></label>
+                    <input id="paymentCardName" type="text" autocomplete="cc-name" placeholder="Jane Smith">
 
-                    <label for="paymentCardNumber">Card number</label>
-                    <input id="paymentCardNumber" type="text" inputmode="numeric" autocomplete="cc-number" placeholder="•••• •••• •••• ••••" disabled>
+                    <label for="paymentCardNumber">Card number <span>*</span></label>
+                    <input id="paymentCardNumber" type="text" inputmode="numeric" autocomplete="cc-number" placeholder="1234 1234 1234 1234" maxlength="23">
 
                     <div class="card-field-row">
                         <div>
-                            <label for="paymentCardExpiry">Expiration</label>
-                            <input id="paymentCardExpiry" type="text" autocomplete="cc-exp" placeholder="MM/YY" disabled>
+                            <label for="paymentCardExpiry">Expiration <span>*</span></label>
+                            <input id="paymentCardExpiry" type="text" autocomplete="cc-exp" placeholder="MM/YY" maxlength="5">
                         </div>
                         <div>
-                            <label for="paymentCardCvv">CVV</label>
-                            <input id="paymentCardCvv" type="text" inputmode="numeric" autocomplete="cc-csc" placeholder="•••" disabled>
+                            <label for="paymentCardCvv">CVV <span>*</span></label>
+                            <input id="paymentCardCvv" type="text" inputmode="numeric" autocomplete="cc-csc" placeholder="123" maxlength="4">
                         </div>
                     </div>
+                </div>
+
+                <!-- Selected Card Display -->
+                <div id="selectedCardDisplay" class="account-form" style="padding: 18px; gap: 12px; display: none;">
+                    <p class="form-help" style="grid-column: 1/-1;">Using saved payment card:</p>
+                    
+                    <label for="selectedCardName">Name on card</label>
+                    <input id="selectedCardName" type="text" autocomplete="cc-name" disabled>
+
+                    <label for="selectedCardNumber">Card number</label>
+                    <input id="selectedCardNumber" type="text" inputmode="numeric" autocomplete="cc-number" disabled>
+
+                    <div class="card-field-row">
+                        <div>
+                            <label for="selectedCardExpiry">Expiration</label>
+                            <input id="selectedCardExpiry" type="text" autocomplete="cc-exp" disabled>
+                        </div>
+                        <div>
+                            <label for="selectedCardCvv">CVV</label>
+                            <input id="selectedCardCvv" type="text" inputmode="numeric" autocomplete="cc-csc" placeholder="•••" disabled>
+                        </div>
+                    </div>
+                    
+                    <button id="changeCardButton" class="text-button" type="button" style="margin-top: 12px;">Change payment method</button>
                 </div>
 
                 <p id="paymentMessage" class="form-message" role="status" aria-live="polite" style="margin-top: 14px;"></p>
