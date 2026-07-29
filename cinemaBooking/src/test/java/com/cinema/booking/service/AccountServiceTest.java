@@ -173,4 +173,61 @@ class AccountServiceTest {
 
         verify(paymentCardRepository, never()).save(any(PaymentCard.class));
     }
+
+    @Test
+    void suspendActiveCustomer() {
+        Account customer = customerWithStatus("Active");
+        when(accountRepository.findById(12)).thenReturn(Optional.of(customer));
+        when(accountRepository.save(customer)).thenReturn(customer);
+
+        Account updated = accountService.setCustomerSuspended(12, true);
+
+        assertThat(updated.getStatus()).isEqualTo("Suspended");
+        verify(accountRepository).save(customer);
+    }
+
+    @Test
+    void reactivateSuspendedCustomer() {
+        Account customer = customerWithStatus("Suspended");
+        when(accountRepository.findById(12)).thenReturn(Optional.of(customer));
+        when(accountRepository.save(customer)).thenReturn(customer);
+
+        Account updated = accountService.setCustomerSuspended(12, false);
+
+        assertThat(updated.getStatus()).isEqualTo("Active");
+        verify(accountRepository).save(customer);
+    }
+
+    @Test
+    void suspensionDoesNotActivateUnverifiedCustomer() {
+        Account customer = customerWithStatus("Inactive");
+        when(accountRepository.findById(12)).thenReturn(Optional.of(customer));
+
+        assertThatThrownBy(() -> accountService.setCustomerSuspended(12, false))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Only suspended customer accounts can be reactivated.");
+
+        assertThat(customer.getStatus()).isEqualTo("Inactive");
+        verify(accountRepository, never()).save(any(Account.class));
+    }
+
+    @Test
+    void suspensionCannotChangeAdministratorAccount() {
+        Account admin = customerWithStatus("Active");
+        admin.setRole("ADMIN");
+        when(accountRepository.findById(4)).thenReturn(Optional.of(admin));
+
+        assertThatThrownBy(() -> accountService.setCustomerSuspended(4, true))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Only customer accounts can be managed.");
+
+        verify(accountRepository, never()).save(any(Account.class));
+    }
+
+    private static Account customerWithStatus(String status) {
+        Account account = new Account();
+        account.setRole("CUSTOMER");
+        account.setStatus(status);
+        return account;
+    }
 }

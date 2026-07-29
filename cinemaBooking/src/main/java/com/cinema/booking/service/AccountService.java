@@ -13,6 +13,7 @@ import com.cinema.booking.model.EmailVerificationToken;
 import com.cinema.booking.repository.EmailVerificationTokenRepository;
 
 import java.time.YearMonth;
+import java.util.List;
 import java.util.Optional;
 
 import com.cinema.booking.service.CryptoService;
@@ -94,6 +95,42 @@ public class AccountService {
         if (opt.isEmpty()) throw new IllegalArgumentException("Account not found");
         Account account = opt.get();
         account.setStatus("Active");
+        return accountRepository.save(account);
+    }
+
+    public List<Account> getCustomersForAdmin() {
+        return accountRepository.findByRoleIgnoreCaseOrderByLastNameAscFirstNameAsc("CUSTOMER");
+    }
+
+    public Account setCustomerSuspended(Integer accountId, boolean suspended) {
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new IllegalArgumentException("Account not found."));
+
+        if (!"CUSTOMER".equalsIgnoreCase(account.getRole())) {
+            throw new IllegalArgumentException("Only customer accounts can be managed.");
+        }
+
+        String currentStatus = account.getStatus();
+        if (suspended) {
+            if ("Suspended".equalsIgnoreCase(currentStatus)) {
+                return account;
+            }
+            if (!"Active".equalsIgnoreCase(currentStatus)) {
+                throw new IllegalArgumentException(
+                        "This customer must verify their account before it can be suspended.");
+            }
+            account.setStatus("Suspended");
+        } else {
+            if ("Active".equalsIgnoreCase(currentStatus)) {
+                return account;
+            }
+            if (!"Suspended".equalsIgnoreCase(currentStatus)) {
+                throw new IllegalArgumentException(
+                        "Only suspended customer accounts can be reactivated.");
+            }
+            account.setStatus("Active");
+        }
+
         return accountRepository.save(account);
     }
 

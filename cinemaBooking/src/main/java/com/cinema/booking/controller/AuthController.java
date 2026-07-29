@@ -1,5 +1,6 @@
 package com.cinema.booking.controller;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
@@ -7,7 +8,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,9 +22,6 @@ import com.cinema.booking.repository.AccountRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 
 @RestController
 public class AuthController {
@@ -39,6 +40,12 @@ public class AuthController {
         String password = String.valueOf(payload.getOrDefault("password", ""));
 
         try {
+            HttpSession existingSession = request.getSession(false);
+            if (existingSession != null) {
+                existingSession.invalidate();
+            }
+            SecurityContextHolder.clearContext();
+
             if ("admin@cinemaworld.com".equals(email)) {
                 // Demo override: admin account uses the fixed password "anything"
                 if (!"anything".equals(password)) {
@@ -49,13 +56,34 @@ public class AuthController {
                             Account admin = new Account("Cinema", "Admin", email, "", false, "ADMIN");
                             return accountRepository.save(admin);
                         });
-                HttpSession session = request.getSession(true);
+
+                Authentication adminAuthentication =
+                        UsernamePasswordAuthenticationToken.authenticated(
+                                account.getEmail(),
+                                null,
+                                List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
+                SecurityContext context = SecurityContextHolder.createEmptyContext();
+                context.setAuthentication(adminAuthentication);
+                SecurityContextHolder.setContext(context);
+                new HttpSessionSecurityContextRepository().saveContext(context, request, response);
+
+                HttpSession session = request.getSession();
                 return ResponseEntity.ok(Map.of(
                         "email", email,
-                        "role", account.getRole(),
+                        "role", "ADMIN",
                         "accountId", account.getAccountId(),
                         "sessionId", session.getId()
                 ));
+            }
+
+            Account account = accountRepository.findByEmailIgnoreCase(email).orElse(null);
+            if (account != null && "Inactive".equalsIgnoreCase(account.getStatus())) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("message", "Account is not verified. Please check your email to verify your account."));
+            }
+            if (account != null && "Suspended".equalsIgnoreCase(account.getStatus())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of("message", "This account has been suspended. Please contact Cinema World support."));
             }
 
             UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(email, password);
@@ -67,13 +95,6 @@ public class AuthController {
             new HttpSessionSecurityContextRepository().saveContext(context, request, response);
 
             HttpSession session = request.getSession(true);
-
-            Account account = accountRepository.findByEmailIgnoreCase(email).orElse(null);
-
-            if (account != null && "Inactive".equals(account.getStatus())) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of("message", "Account is not verified. Please check your email to verify your account."));
-            }
 
             return ResponseEntity.ok(Map.of(
                     "email", email,

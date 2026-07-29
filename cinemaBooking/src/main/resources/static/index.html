@@ -625,26 +625,22 @@
             <section id="adminUsersPanel" class="admin-panel" hidden>
                 <h2>Manage Users</h2>
                 <div class="admin-preview">
-                    <h3>User Account Overview</h3>
-                    <div class="simple-list">
-                        <div class="simple-list-row">
-                            <span>
-                                Customer accounts
-                                <span class="admin-showtime-meta">View registered users and account status when the users endpoint is available.</span>
-                            </span>
+                    <div class="admin-users-heading">
+                        <div>
+                            <h3>Registered Customers</h3>
+                            <p id="adminUsersSummary" class="admin-showtime-meta">Loading account totals...</p>
                         </div>
-                        <div class="simple-list-row">
-                            <span>
-                                Administrator accounts
-                                <span class="admin-showtime-meta">Add or update admin users after role-management support is connected.</span>
-                            </span>
-                        </div>
-                        <div class="simple-list-row">
-                            <span>
-                                Suspended accounts
-                                <span class="admin-showtime-meta">Suspend or reactivate users when account controls are available.</span>
-                            </span>
-                        </div>
+                        <button id="adminUsersRefreshButton" class="form-button form-button--secondary" type="button">Refresh</button>
+                    </div>
+
+                    <label class="admin-users-search" for="adminUsersSearch">
+                        Search customers
+                        <input id="adminUsersSearch" type="search" placeholder="Name or email" autocomplete="off">
+                    </label>
+
+                    <p id="adminUsersMessage" class="form-message" role="status" aria-live="polite"></p>
+                    <div id="adminUserList" class="simple-list" aria-live="polite">
+                        <p>Loading customers...</p>
                     </div>
                 </div>
             </section>

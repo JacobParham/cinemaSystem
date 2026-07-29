@@ -217,6 +217,11 @@ const adminMovieMessage = document.querySelector("#adminMovieMessage");
 const adminPromotionForm = document.querySelector("#adminPromotionForm");
 const adminPromotionMessage = document.querySelector("#adminPromotionMessage");
 const adminPromotionList = document.querySelector("#adminPromotionList");
+const adminUserList = document.querySelector("#adminUserList");
+const adminUsersMessage = document.querySelector("#adminUsersMessage");
+const adminUsersSummary = document.querySelector("#adminUsersSummary");
+const adminUsersSearch = document.querySelector("#adminUsersSearch");
+const adminUsersRefreshButton = document.querySelector("#adminUsersRefreshButton");
 const adminShowtimeForm = document.querySelector("#adminShowtimeForm");
 const adminShowtimeMovie = document.querySelector("#adminShowtimeMovie");
 const adminShowtimeMessage = document.querySelector("#adminShowtimeMessage");
@@ -234,6 +239,7 @@ let bookedSeats = [];
 let editingCardId = null;
 let pendingCheckoutAfterLogin = false;
 let promotionDrafts = [];
+let adminUsers = [];
 let ticketCounts = {
     adult: 0,
     child: 0,
@@ -1676,6 +1682,164 @@ function showAdminSection(panelId) {
     if (panelId === "adminPromotionsPanel") {
         loadAdminPromotions();
     }
+
+    if (panelId === "adminUsersPanel") {
+        loadAdminUsers();
+    }
+}
+
+function escapeHtml(value) {
+    const element = document.createElement("span");
+    element.textContent = value == null ? "" : String(value);
+    return element.innerHTML;
+}
+
+function renderAdminUsers() {
+    const searchText = adminUsersSearch.value.trim().toLowerCase();
+    const visibleUsers = adminUsers.filter(function (user) {
+        const searchableText = [
+            user.firstName,
+            user.lastName,
+            user.email
+        ].join(" ").toLowerCase();
+        return searchableText.includes(searchText);
+    });
+
+    const activeCount = adminUsers.filter(function (user) {
+        return user.status === "Active";
+    }).length;
+    const suspendedCount = adminUsers.filter(function (user) {
+        return user.status === "Suspended";
+    }).length;
+    const inactiveCount = adminUsers.length - activeCount - suspendedCount;
+
+    adminUsersSummary.textContent =
+        `${adminUsers.length} total | ${activeCount} active | ` +
+        `${suspendedCount} suspended | ${inactiveCount} awaiting verification`;
+
+    if (visibleUsers.length === 0) {
+        adminUserList.innerHTML = searchText
+            ? "<p>No customers match that search.</p>"
+            : "<p>No customer accounts have been registered.</p>";
+        return;
+    }
+
+    adminUserList.innerHTML = visibleUsers.map(function (user) {
+        const status = user.status || "Inactive";
+        const isActive = status === "Active";
+        const isSuspended = status === "Suspended";
+        let action = '<button type="button" disabled>Awaiting verification</button>';
+
+        if (isActive) {
+            action = `<button class="admin-user-action admin-user-action--suspend"
+                type="button" data-account-id="${user.accountId}" data-suspended="true">
+                Suspend
+            </button>`;
+        } else if (isSuspended) {
+            action = `<button class="admin-user-action"
+                type="button" data-account-id="${user.accountId}" data-suspended="false">
+                Reactivate
+            </button>`;
+        }
+
+        return `
+            <div class="simple-list-row admin-user-row">
+                <span>
+                    <strong>${escapeHtml(user.firstName)} ${escapeHtml(user.lastName)}</strong>
+                    <span class="admin-showtime-meta">${escapeHtml(user.email)}</span>
+                    <span class="admin-user-status admin-user-status--${status.toLowerCase()}">
+                        ${escapeHtml(status)}
+                    </span>
+                </span>
+                ${action}
+            </div>
+        `;
+    }).join("");
+}
+
+async function loadAdminUsers() {
+    adminUserList.innerHTML = "<p>Loading customers...</p>";
+    adminUsersMessage.textContent = "";
+    adminUsersRefreshButton.disabled = true;
+
+    try {
+        const response = await fetch("/admin/users", {
+            credentials: "same-origin"
+        });
+        const data = await response.json().catch(function () {
+            return {};
+        });
+
+        if (!response.ok) {
+            throw new Error(data.message || "Could not load customer accounts.");
+        }
+
+        adminUsers = Array.isArray(data) ? data : [];
+        renderAdminUsers();
+    } catch (error) {
+        adminUserList.innerHTML = "<p>Customer accounts could not be loaded.</p>";
+        setFormMessage(adminUsersMessage, error.message, "error");
+    } finally {
+        adminUsersRefreshButton.disabled = false;
+    }
+}
+
+async function handleAdminUserAction(event) {
+    const button = event.target.closest(".admin-user-action");
+    if (!button) {
+        return;
+    }
+
+    const accountId = Number(button.dataset.accountId);
+    const suspended = button.dataset.suspended === "true";
+    const user = adminUsers.find(function (candidate) {
+        return candidate.accountId === accountId;
+    });
+    if (!user) {
+        return;
+    }
+
+    const actionLabel = suspended ? "suspend" : "reactivate";
+    const fullName = `${user.firstName} ${user.lastName}`.trim();
+    if (!window.confirm(`Are you sure you want to ${actionLabel} ${fullName}?`)) {
+        return;
+    }
+
+    button.disabled = true;
+    setFormMessage(
+        adminUsersMessage,
+        suspended ? "Suspending customer..." : "Reactivating customer...",
+        "success"
+    );
+
+    try {
+        const response = await fetch(`/admin/users/${accountId}/suspension`, {
+            method: "PATCH",
+            credentials: "same-origin",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ suspended: suspended })
+        });
+        const data = await response.json().catch(function () {
+            return {};
+        });
+
+        if (!response.ok) {
+            throw new Error(data.message || "The account status could not be changed.");
+        }
+
+        adminUsers = adminUsers.map(function (candidate) {
+            return candidate.accountId === accountId ? data : candidate;
+        });
+        renderAdminUsers();
+        setFormMessage(
+            adminUsersMessage,
+            `${fullName} was ${suspended ? "suspended" : "reactivated"}.`,
+            "success"
+        );
+    } catch (error) {
+        button.disabled = false;
+        setFormMessage(adminUsersMessage, error.message, "error");
+    }
 }
 
 function renderAdminPromotionList() {
@@ -2599,6 +2763,9 @@ profileForm.addEventListener("submit", handleProfileSave);
 logoutButton.addEventListener("click", handleLogout);
 adminMovieForm.addEventListener("submit", handleAdminMovieSubmit);
 adminPromotionForm.addEventListener("submit", handleAdminPromotionSubmit);
+adminUserList.addEventListener("click", handleAdminUserAction);
+adminUsersSearch.addEventListener("input", renderAdminUsers);
+adminUsersRefreshButton.addEventListener("click", loadAdminUsers);
 adminShowtimeForm.addEventListener("submit", handleAdminShowtimeSubmit);
 adminShowtimeMovie.addEventListener("change", renderAdminShowtimeList);
 

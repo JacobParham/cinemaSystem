@@ -1,8 +1,6 @@
 package com.cinema.booking.config;
 
 import com.cinema.booking.repository.AccountRepository;
-import java.util.Optional;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -45,6 +43,7 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/admin/**").hasRole("ADMIN")
                 .anyRequest().permitAll())
             .formLogin(form -> form.disable())
             .httpBasic(httpBasic -> httpBasic.disable())

@@ -13,4 +13,6 @@ public interface AccountRepository
     Optional<Account> findByEmailIgnoreCase(String email);
 
     List<Account> findByPromotionsTrue();
+
+    List<Account> findByRoleIgnoreCaseOrderByLastNameAscFirstNameAsc(String role);
 }
