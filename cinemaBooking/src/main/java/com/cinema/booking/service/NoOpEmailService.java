@@ -1,5 +1,8 @@
 package com.cinema.booking.service;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -56,5 +59,25 @@ public class NoOpEmailService implements EmailService {
                         + " to "
                         + recipientEmail
         );
+    }
+
+    @Override
+    public void sendOrderConfirmation(
+            String recipientEmail,
+            String recipientName,
+            String movieTitle,
+            String showroomName,
+            LocalDate showDate,
+            LocalTime showTime,
+            int adultTickets,
+            int childTickets,
+            int seniorTickets,
+            BigDecimal adultPrice,
+            BigDecimal childPrice,
+            BigDecimal seniorPrice,
+            String seatNumbers,
+            BigDecimal totalPrice
+    ) {
+        // No-op for tests.
     }
 }

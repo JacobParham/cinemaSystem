@@ -494,6 +494,41 @@
             </div>
         </section>
 
+        <section id="confirmationPage" class="account-page">
+            <p class="small-heading">Booking confirmed</p>
+            <h1>Order Confirmation</h1>
+
+            <div class="booking-card">
+                <p>Booking reference: <strong id="confirmationBookingId"></strong></p>
+
+                <div class="booking-top">
+                    <div>
+                        <p>Movie</p>
+                        <h2 id="confirmationMovieTitle"></h2>
+                        <p>Showtime</p>
+                        <h2 id="confirmationShowtime"></h2>
+                        <p>Showroom</p>
+                        <h2 id="confirmationShowroom"></h2>
+                    </div>
+                </div>
+
+                <h2>Ticket Breakdown</h2>
+                <div id="confirmationTicketBreakdown" class="ticket-list"></div>
+
+                <div class="booking-summary" style="margin-top: 22px;">
+                    <p>Selected seats: <strong id="confirmationSeats"></strong></p>
+                    <p>Total paid: <strong id="confirmationTotal"></strong></p>
+                </div>
+
+                <p class="form-help" style="margin-top: 22px;">A confirmation email has been sent to <strong id="confirmationEmail"></strong>.</p>
+
+                <div class="booking-actions" style="margin-top: 26px;">
+                    <button id="viewOrderHistoryButton" class="checkout-button" type="button">View Order History</button>
+                    <button id="confirmationBackToMoviesButton" class="back-button" type="button">Back to Movies</button>
+                </div>
+            </div>
+        </section>
+
         <section id="adminPage" class="account-page">
             <button class="back-button" type="button" data-page="homePage">Back to Movies</button>
             <p class="small-heading">Admin Portal</p>

@@ -18,31 +18,43 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.cinema.booking.model.Account;
 import com.cinema.booking.model.Booking;
 import com.cinema.booking.model.SeatLock;
 import com.cinema.booking.model.Showtime;
 import com.cinema.booking.repository.AccountRepository;
 import com.cinema.booking.repository.BookingRepository;
 import com.cinema.booking.repository.ShowtimeRepository;
+import com.cinema.booking.service.EmailService;
 import com.cinema.booking.service.SeatLockService;
 
 @RestController
 @RequestMapping("/bookings")
 public class BookingController {
 
+    // Mirrors the client-side ticketPrices constants in app.js. There is no
+    // backend-configurable ticket pricing model yet, so this is duplicated
+    // here only to itemize price-per-type in the confirmation email.
+    private static final BigDecimal ADULT_TICKET_PRICE = new BigDecimal("14");
+    private static final BigDecimal CHILD_TICKET_PRICE = new BigDecimal("9");
+    private static final BigDecimal SENIOR_TICKET_PRICE = new BigDecimal("10");
+
     private final BookingRepository bookingRepository;
     private final ShowtimeRepository showtimeRepository;
     private final AccountRepository accountRepository;
     private final SeatLockService seatLockService;
+    private final EmailService emailService;
 
     public BookingController(BookingRepository bookingRepository,
                              ShowtimeRepository showtimeRepository,
                              AccountRepository accountRepository,
-                             SeatLockService seatLockService) {
+                             SeatLockService seatLockService,
+                             EmailService emailService) {
         this.bookingRepository = bookingRepository;
         this.showtimeRepository = showtimeRepository;
         this.accountRepository = accountRepository;
         this.seatLockService = seatLockService;
+        this.emailService = emailService;
     }
 
     /**
@@ -149,7 +161,7 @@ public class BookingController {
     /**
      * POST /bookings
      * Saves a new booking. Requires the user to be logged in.
-     * Request body: { showtimeId, adultTickets, childTickets, seniorTickets, seatNumbers, totalPrice, sessionId }
+     * Request body: { showtimeId, adultTickets, childTickets, seniorTickets, seatNumbers, totalPrice, sessionId, confirmationEmail }
      */
     @PostMapping
     public ResponseEntity<Map<String, Object>> createBooking(
@@ -223,10 +235,9 @@ public class BookingController {
             }
         }
 
-        // Resolve account id from session principal
-        Integer accountId = accountRepository.findByEmailIgnoreCase(principal.getName())
-                .map(a -> a.getAccountId())
-                .orElse(null);
+        // Resolve account from session principal
+        Account account = accountRepository.findByEmailIgnoreCase(principal.getName()).orElse(null);
+        Integer accountId = account != null ? account.getAccountId() : null;
 
         // Persist the booking
         Booking booking = new Booking();
@@ -243,6 +254,31 @@ public class BookingController {
         // Release the seat locks for this session
         if (request.sessionId() != null && !request.sessionId().isEmpty()) {
             seatLockService.releaseSessionLocks(request.sessionId());
+        }
+
+        // Send the order confirmation email. A failure here must not fail the booking;
+        // SmtpEmailService already catches and logs its own send errors.
+        if (account != null) {
+            String recipient = request.confirmationEmail() != null && !request.confirmationEmail().isBlank()
+                    ? request.confirmationEmail().trim()
+                    : account.getEmail();
+
+            emailService.sendOrderConfirmation(
+                    recipient,
+                    account.getFirstName(),
+                    showtime.getMovie().getTitle(),
+                    showtime.getShowroom().getShowroomName(),
+                    showtime.getShowDate(),
+                    showtime.getShowTime(),
+                    request.adultTickets(),
+                    request.childTickets(),
+                    request.seniorTickets(),
+                    ADULT_TICKET_PRICE,
+                    CHILD_TICKET_PRICE,
+                    SENIOR_TICKET_PRICE,
+                    booking.getSeatNumbers(),
+                    booking.getTotalPrice()
+            );
         }
 
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
@@ -311,7 +347,8 @@ public class BookingController {
             int seniorTickets,
             String seatNumbers,
             BigDecimal totalPrice,
-            String sessionId
+            String sessionId,
+            String confirmationEmail
     ) {}
 
     public record SeatLockRequest(
