@@ -151,6 +151,16 @@ const paymentTotal = document.querySelector("#paymentTotal");
 const paymentMessage = document.querySelector("#paymentMessage");
 const submitPaymentButton = document.querySelector("#submitPaymentButton");
 const paymentBackToMoviesButton = document.querySelector("#paymentBackToMoviesButton");
+const confirmationBookingId = document.querySelector("#confirmationBookingId");
+const confirmationMovieTitle = document.querySelector("#confirmationMovieTitle");
+const confirmationShowtime = document.querySelector("#confirmationShowtime");
+const confirmationShowroom = document.querySelector("#confirmationShowroom");
+const confirmationTicketBreakdown = document.querySelector("#confirmationTicketBreakdown");
+const confirmationSeats = document.querySelector("#confirmationSeats");
+const confirmationTotal = document.querySelector("#confirmationTotal");
+const confirmationEmail = document.querySelector("#confirmationEmail");
+const viewOrderHistoryButton = document.querySelector("#viewOrderHistoryButton");
+const confirmationBackToMoviesButton = document.querySelector("#confirmationBackToMoviesButton");
 const savedCardsSection = document.querySelector("#savedCardsSection");
 const checkoutSavedCards = document.querySelector("#checkoutSavedCards");
 const useNewCardButton = document.querySelector("#useNewCardButton");
@@ -1118,34 +1128,85 @@ function showSavedCardsSection() {
     newCardForm.style.display = "none";
 }
 
-function handleSubmitPayment() {
+async function handleSubmitPayment() {
     // Check if using saved card or new card
     const isUsingSavedCard = selectedCardDisplay.style.display !== "none";
-    
-    if (isUsingSavedCard) {
-        setFormMessage(
-            paymentMessage,
-            "Payment processed using saved card. No real charge was made.",
-            "success"
-        );
-    } else {
+
+    if (!isUsingSavedCard) {
         // Validate new card form
         const cardName = document.querySelector("#paymentCardName").value.trim();
         const cardNumber = document.querySelector("#paymentCardNumber").value.trim();
         const cardExpiry = document.querySelector("#paymentCardExpiry").value.trim();
         const cardCvv = document.querySelector("#paymentCardCvv").value.trim();
-        
+
         if (!cardName || !cardNumber || !cardExpiry || !cardCvv) {
             setFormMessage(paymentMessage, "Please complete all payment fields.", "error");
             return;
         }
-        
-        setFormMessage(
-            paymentMessage,
-            "Payment details received for review. No real charge was made.",
-            "success"
-        );
     }
+
+    setFormMessage(paymentMessage, "Processing payment...", "success");
+    submitPaymentButton.disabled = true;
+
+    try {
+        const response = await fetch("/bookings", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                showtimeId: currentShowtimeId,
+                adultTickets: ticketCounts.adult,
+                childTickets: ticketCounts.child,
+                seniorTickets: ticketCounts.senior,
+                seatNumbers: selectedSeats.join(","),
+                totalPrice: getTicketTotal(),
+                sessionId: currentSessionId,
+                confirmationEmail: orderEmail.value.trim()
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            setFormMessage(paymentMessage, data.message || "Payment could not be processed.", "error");
+            return;
+        }
+
+        showConfirmationPage(data.bookingId);
+    } catch (error) {
+        setFormMessage(paymentMessage, "Payment could not be processed. Please try again.", "error");
+    } finally {
+        submitPaymentButton.disabled = false;
+    }
+}
+
+function showConfirmationPage(bookingId) {
+    confirmationBookingId.textContent = bookingId;
+    confirmationMovieTitle.textContent = currentMovieTitle;
+    confirmationShowtime.textContent = bookingShowtime.textContent;
+    confirmationShowroom.textContent = bookingShowroom.textContent;
+    confirmationSeats.textContent = selectedSeats.join(", ");
+    confirmationTotal.textContent = formatMoney(getTicketTotal());
+    confirmationEmail.textContent = orderEmail.value.trim();
+
+    confirmationTicketBreakdown.innerHTML = ["adult", "child", "senior"].map(function (ticketType) {
+        const count = ticketCounts[ticketType];
+        const label = ticketType.charAt(0).toUpperCase() + ticketType.slice(1);
+        const price = ticketPrices[ticketType];
+        const lineTotal = count * price;
+
+        return `
+            <div class="ticket-row">
+                <span>${label} tickets: ${count}</span>
+                <span>${formatMoney(price)} each | ${formatMoney(lineTotal)}</span>
+            </div>
+        `;
+    }).join("");
+
+    // Reset booking state so the next checkout starts clean
+    selectedSeats = [];
+    ticketCounts = { adult: 0, child: 0, senior: 0 };
+
+    showPage("confirmationPage");
 }
 
 function returnToCurrentMovie() {
@@ -2481,6 +2542,8 @@ proceedToPaymentButton.addEventListener("click", handleProceedToPayment);
 paymentBackButton.addEventListener("click", showOrderSummary);
 paymentBackToMoviesButton.addEventListener("click", showHomePage);
 submitPaymentButton.addEventListener("click", handleSubmitPayment);
+viewOrderHistoryButton.addEventListener("click", function () { showPage("profilePage"); });
+confirmationBackToMoviesButton.addEventListener("click", showHomePage);
 useNewCardButton.addEventListener("click", showNewCardForm);
 changeCardButton.addEventListener("click", showSavedCardsSection);
 addCardButton.addEventListener("click", addDemoCard);

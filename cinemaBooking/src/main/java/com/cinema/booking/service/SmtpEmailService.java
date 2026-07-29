@@ -1,5 +1,10 @@
 package com.cinema.booking.service;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -139,5 +144,58 @@ public class SmtpEmailService implements EmailService {
         message.setText(body);
 
         mailSender.send(message);
+    }
+
+    @Override
+    public void sendOrderConfirmation(
+            String recipientEmail,
+            String recipientName,
+            String movieTitle,
+            String showroomName,
+            LocalDate showDate,
+            LocalTime showTime,
+            int adultTickets,
+            int childTickets,
+            int seniorTickets,
+            BigDecimal adultPrice,
+            BigDecimal childPrice,
+            BigDecimal seniorPrice,
+            String seatNumbers,
+            BigDecimal totalPrice
+    ) {
+        try {
+            StringBuilder ticketLines = new StringBuilder();
+            if (adultTickets > 0) {
+                ticketLines.append("  Adult x").append(adultTickets)
+                        .append(" @ $").append(adultPrice).append(" each\n");
+            }
+            if (childTickets > 0) {
+                ticketLines.append("  Child x").append(childTickets)
+                        .append(" @ $").append(childPrice).append(" each\n");
+            }
+            if (seniorTickets > 0) {
+                ticketLines.append("  Senior x").append(seniorTickets)
+                        .append(" @ $").append(seniorPrice).append(" each\n");
+            }
+
+            String formattedDate = showDate.format(DateTimeFormatter.ofPattern("MMMM d, yyyy"));
+            String formattedTime = showTime.format(DateTimeFormatter.ofPattern("h:mm a"));
+
+            MimeMessageHelper helper = createMessage(recipientEmail);
+            helper.setSubject("Your Cinema Booking order confirmation");
+            helper.setText("Hello " + recipientName + ",\n\n"
+                    + "Your booking is confirmed! Here are the details:\n\n"
+                    + "Movie: " + movieTitle + "\n"
+                    + "Showroom: " + showroomName + "\n"
+                    + "Date & Time: " + formattedDate + " at " + formattedTime + "\n"
+                    + "Seats: " + seatNumbers + "\n\n"
+                    + "Tickets:\n" + ticketLines
+                    + "\nTotal: $" + totalPrice + "\n\n"
+                    + "Thanks,\n"
+                    + "Cinema Booking Team");
+            mailSender.send(helper.getMimeMessage());
+        } catch (Exception ex) {
+            System.err.println("Warning: failed to send order confirmation email: " + ex.getMessage());
+        }
     }
 }
