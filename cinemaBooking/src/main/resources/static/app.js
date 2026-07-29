@@ -102,6 +102,7 @@ const bookingPage = document.querySelector("#bookingPage");
 const accountPages = document.querySelectorAll(".account-page");
 const searchInput = document.querySelector("#searchInput");
 const genreFilter = document.querySelector("#genreFilter");
+const dateFilter = document.querySelector("#dateFilter");
 const currentMovies = document.querySelector("#currentMovies");
 const comingSoonMovies = document.querySelector("#comingSoonMovies");
 const noResults = document.querySelector("#noResults");
@@ -532,30 +533,102 @@ function createFavoriteMovieCard(movie) {
         </article>
     `;
 }
+function loadShowDates() {
+    const uniqueDates = [];
+
+    movies.forEach(function (movie) {
+        if (!movie.showtimes) {
+            return;
+        }
+
+        movie.showtimes.forEach(function (showtime) {
+            if (
+                showtime.showDate &&
+                !uniqueDates.includes(showtime.showDate)
+            ) {
+                uniqueDates.push(showtime.showDate);
+            }
+        });
+    });
+
+    uniqueDates.sort();
+
+    dateFilter.innerHTML =
+        '<option value="All">All show dates</option>';
+
+    uniqueDates.forEach(function (showDate) {
+        const option = document.createElement("option");
+
+        option.value = showDate;
+        option.textContent = formatShowDate(showDate);
+
+        dateFilter.appendChild(option);
+    });
+
+    dateFilter.disabled = uniqueDates.length === 0;
+}
 
 function renderMovies() {
-    const searchText = searchInput.value.toLowerCase();
-    const selectedGenre = genreFilter.value;
+    const searchText =
+        searchInput.value.trim().toLowerCase();
+
+    const selectedGenre =
+        genreFilter.value;
+
+    const selectedDate =
+        dateFilter.value;
 
     const filteredMovies = movies.filter(function (movie) {
-        const matchesTitle = movie.title.toLowerCase().includes(searchText);
-        const matchesGenre = selectedGenre === "All" || movie.genre === selectedGenre;
+        const matchesTitle =
+            movie.title
+                .toLowerCase()
+                .includes(searchText);
 
-        return matchesTitle && matchesGenre;
+        const matchesGenre =
+            selectedGenre === "All" ||
+            movie.genre === selectedGenre;
+
+        const matchesDate =
+            selectedDate === "All" ||
+            (
+                Array.isArray(movie.showtimes) &&
+                movie.showtimes.some(function (showtime) {
+                    return showtime.showDate === selectedDate;
+                })
+            );
+
+        return (
+            matchesTitle &&
+            matchesGenre &&
+            matchesDate
+        );
     });
 
-    const runningMovies = filteredMovies.filter(function (movie) {
-        return movie.status === "Currently Running";
-    });
+    const runningMovies =
+        filteredMovies.filter(function (movie) {
+            return movie.status === "Currently Running";
+        });
 
-    const soonMovies = filteredMovies.filter(function (movie) {
-        return movie.status === "Coming Soon";
-    });
+    const soonMovies =
+        filteredMovies.filter(function (movie) {
+            return movie.status === "Coming Soon";
+        });
 
-    currentMovies.innerHTML = runningMovies.map(createMovieCard).join("");
-    comingSoonMovies.innerHTML = soonMovies.map(createMovieCard).join("");
+    currentMovies.innerHTML =
+        runningMovies
+            .map(createMovieCard)
+            .join("");
 
-    noResults.style.display = filteredMovies.length === 0 ? "block" : "none";
+    comingSoonMovies.innerHTML =
+        soonMovies
+            .map(createMovieCard)
+            .join("");
+
+    noResults.style.display =
+        filteredMovies.length === 0
+            ? "block"
+            : "none";
+
     connectDetailsButtons();
     connectFavoriteButtons();
 }
@@ -2696,6 +2769,7 @@ function loadGenres() {
 
 searchInput.addEventListener("input", renderMovies);
 genreFilter.addEventListener("change", renderMovies);
+dateFilter.addEventListener("change", renderMovies);
 backToMoviesButton.addEventListener("click", showHomePage);
 backToDetailsButton.addEventListener("click", returnToCurrentMovie);
 bookingBackToMoviesButton.addEventListener("click", showHomePage);
@@ -2797,12 +2871,20 @@ document.querySelectorAll(".counter-button").forEach(function (button) {
 
 async function init() {
     renderNavigation();
+
     try {
         await loadMovies();
+
         loadGenres();
+        loadShowDates();
         renderMovies();
+
     } catch (error) {
-        document.querySelector("#moviesError").hidden = false;
+        console.error("Movie loading error:", error);
+
+        document.querySelector(
+            "#moviesError"
+        ).hidden = false;
     }
 }
 
